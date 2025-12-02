@@ -1,0 +1,8 @@
+{
+  "name": "Copy of EcoGrab",
+  "description": "A gamified platform for students to save the ecosystem, join clans, and learn with AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
