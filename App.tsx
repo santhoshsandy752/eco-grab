@@ -91,6 +91,44 @@ const App: React.FC = () => {
       }
   };
 
+  const handleDeleteAccount = () => {
+    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      try {
+        if (!user) return;
+
+        // 1. Remove from users list
+        const usersRaw = localStorage.getItem('eco_users');
+        if (usersRaw) {
+          const users = JSON.parse(usersRaw);
+          const updatedUsers = users.filter((u: any) => u.id !== user.id);
+          localStorage.setItem('eco_users', JSON.stringify(updatedUsers));
+        }
+
+        // 2. Remove from clan (decrement member count)
+        if (user.clanId) {
+            const updatedClans = clans.map(c => {
+                if (c.id === user.clanId) {
+                    return { ...c, members: Math.max(0, c.members - 1) };
+                }
+                return c;
+            });
+            // Optional: Remove clan if 0 members? For now, we keep it.
+            setClans(updatedClans);
+            saveClansToStorage(updatedClans);
+        }
+
+        // 3. Reset State (Logout)
+        setUser(undefined);
+        setActiveTab(Tab.HOME);
+        alert("Account deleted successfully.");
+
+      } catch (error) {
+        console.error("Error deleting account:", error);
+        alert("Failed to delete account.");
+      }
+    }
+  };
+
   // If not authenticated, show Auth Screen
   if (!user) {
       return <Auth onLogin={(u) => {
@@ -123,7 +161,7 @@ const App: React.FC = () => {
       case Tab.GAMES:
         return <GameZone userPoints={user.points} addPoints={addPoints} gardenLevel={user.gardenLevel || 0} />;
       case Tab.PROFILE:
-        return <ProfileHub user={user} onUpdateUser={updateUser} />;
+        return <ProfileHub user={user} onUpdateUser={updateUser} onDeleteAccount={handleDeleteAccount} />;
       case Tab.GARDEN:
         return <EcoGarden user={user} onUpdateUser={updateUser} />;
       default:

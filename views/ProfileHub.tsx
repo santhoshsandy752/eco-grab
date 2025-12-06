@@ -1,10 +1,12 @@
+
 import React, { useState, useRef, useMemo } from 'react';
 import { User } from '../types';
-import { Camera, Check, Lock, ShoppingBag, User as UserIcon, Palette, Image as ImageIcon, Search } from 'lucide-react';
+import { Camera, Check, Lock, ShoppingBag, User as UserIcon, Palette, Image as ImageIcon, Search, AlertTriangle, Trash2 } from 'lucide-react';
 
 interface ProfileHubProps {
   user: User;
   onUpdateUser: (updates: Partial<User>) => void;
+  onDeleteAccount: () => void;
 }
 
 // Helper to generate a large shop inventory
@@ -80,7 +82,7 @@ const generateShopInventory = () => {
 
 const COSMETIC_SHOP = generateShopInventory();
 
-const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser }) => {
+const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser, onDeleteAccount }) => {
   const [activeTab, setActiveTab] = useState<'wardrobe' | 'shop'>('wardrobe');
   const [shopFilter, setShopFilter] = useState<string>('All');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -134,7 +136,7 @@ const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser }) => {
   }, [shopFilter]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-12">
       
       {/* Notification Toast */}
       {notification && (
@@ -320,6 +322,22 @@ const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser }) => {
           </div>
         </div>
       )}
+
+      {/* Danger Zone - Account Deletion */}
+      <div className="bg-red-50 rounded-2xl p-6 border border-red-100 mt-8">
+        <h3 className="text-red-600 font-bold text-lg mb-2 flex items-center gap-2">
+            <AlertTriangle size={20}/> Danger Zone
+        </h3>
+        <p className="text-slate-600 text-sm mb-4">
+            Deleting your account is permanent. All your points, garden progress, and clan data will be lost immediately.
+        </p>
+        <button 
+            onClick={onDeleteAccount}
+            className="flex items-center gap-2 bg-white text-red-600 border border-red-200 px-6 py-3 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white transition-colors shadow-sm"
+        >
+            <Trash2 size={16} /> Delete Account
+        </button>
+      </div>
     </div>
   );
 };
