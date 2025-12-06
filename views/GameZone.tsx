@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Anchor, Ship, Trash2, ShoppingBag, Map as MapIcon, 
   Menu, X, Trophy, Zap, Heart, Compass, ArrowUpCircle, 
   Droplets, Skull, Sprout, Wind, Shield, CircleDollarSign, 
-  Leaf, Info, Play, Lock
+  Leaf, Info, Play, Lock, Sun, CloudRain
 } from 'lucide-react';
 
 // --- CONSTANTS & DATA LISTS (50 TIERS) ---
@@ -41,884 +42,19 @@ const ZONES = [
   { name: "Deep Ocean", minDepth: 8000, color: "bg-blue-900" },
 ];
 
-// --- SPRITES ---
+// --- SPRITES & SUB-COMPONENTS ---
 
-const BoatSprite: React.FC = () => (
-  <svg width="48" height="96" viewBox="0 0 48 96" fill="none" className="drop-shadow-2xl">
-    {/* Hull Shadow/Base */}
-    <path d="M24 94 C 2 50, 8 15, 24 2 C 40 15, 46 50, 44 94 L 4 94 Z" fill="#0f172a" opacity="0.2" transform="translate(4, 4)" />
-    
-    {/* Wake */}
-    <path d="M24 90 C 30 105, 18 105, 24 90" stroke="white" strokeWidth="4" strokeOpacity="0.5" className="blur-sm" />
-    
-    {/* Hull Main */}
-    <path d="M24 2 C 40 15, 46 50, 44 94 L 4 94 C 2 50, 8 15, 24 2 Z" fill="#f8fafc" stroke="#475569" strokeWidth="2"/>
-    
-    {/* Deck */}
-    <path d="M24 10 C 36 20, 40 50, 38 88 L 10 88 C 8 50, 12 20, 24 10 Z" fill="#cbd5e1"/>
-    
-    {/* Cabin/Console */}
-    <path d="M14 55 H 34 V 75 H 14 Z" fill="#334155" rx="2" />
-    <path d="M16 57 H 32 V 65 H 16 Z" fill="#0ea5e9" /> {/* Window */}
-    
-    {/* Motor */}
-    <rect x="18" y="92" width="12" height="6" rx="1" fill="#1e293b" />
-    
-    {/* Accents */}
-    <path d="M24 2 L 24 20" stroke="#ef4444" strokeWidth="2" />
-    <circle cx="24" cy="80" r="3" fill="#fbbf24" />
-  </svg>
-);
-
-const FishingRodCast: React.FC<{ start: {x:number, y:number}, end: {x:number, y:number} }> = ({ start, end }) => {
-    return (
-        <div className="absolute top-0 left-0 w-0 h-0 pointer-events-none overflow-visible z-30">
-            <svg width="100%" height="100%" className="overflow-visible">
-                <defs>
-                    <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                        <path d="M0,0 L0,6 L6,3 z" fill="#ef4444" />
-                    </marker>
-                </defs>
-                {/* Fishing Line */}
-                <line 
-                    x1={start.x} 
-                    y1={start.y} 
-                    x2={end.x} 
-                    y2={end.y} 
-                    stroke="white" 
-                    strokeWidth="2" 
-                    strokeLinecap="round"
-                    className="drop-shadow-md"
-                >
-                     <animate attributeName="x2" from={start.x} to={end.x} dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
-                     <animate attributeName="y2" from={start.y} to={end.y} dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
-                     <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.8;1" dur="0.5s" fill="freeze" />
-                </line>
-                
-                {/* Bobber/Hook */}
-                <circle cx={end.x} cy={end.y} r="6" fill="#ef4444" stroke="white" strokeWidth="2">
-                     <animate attributeName="opacity" from="0" to="1" dur="0.1s" fill="freeze" />
-                     <animate attributeName="cx" from={start.x} to={end.x} dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
-                     <animate attributeName="cy" from={start.y} to={end.y} dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
-                     
-                     {/* Scale up/down impact effect */}
-                     <animate attributeName="r" values="6;8;0" keyTimes="0;0.8;1" dur="0.5s" begin="0.25s" fill="freeze" />
-                </circle>
-            </svg>
-        </div>
-    )
-};
-
-const FishSprite: React.FC<{isTangled: boolean}> = ({ isTangled }) => (
-  <svg width="32" height="32" viewBox="0 0 32 32" className={isTangled ? "animate-pulse" : "animate-bounce"}>
-    {/* Shadow */}
-    <ellipse cx="16" cy="28" rx="10" ry="3" fill="black" opacity="0.2" />
-    
-    {/* Fish Body */}
-    <path d="M4 16 C 4 10, 10 4, 16 4 C 26 4, 30 16, 26 26 C 20 30, 4 22, 4 16 Z" fill={isTangled ? "#fb7185" : "#facc15"} stroke={isTangled ? "#be123c" : "#ca8a04"} strokeWidth="2" />
-    
-    {/* Tail */}
-    <path d="M26 16 L 32 10 L 32 22 Z" fill={isTangled ? "#fb7185" : "#facc15"} stroke={isTangled ? "#be123c" : "#ca8a04"} strokeWidth="2" strokeLinejoin="round" />
-    
-    {/* Eye */}
-    <circle cx="10" cy="12" r="2.5" fill="white" />
-    <circle cx="10.5" cy="12" r="1" fill="black" />
-    
-    {/* Fin */}
-    <path d="M14 16 L 8 20 L 14 20 Z" fill={isTangled ? "#e11d48" : "#eab308"} />
-    
-    {/* Stripes */}
-    <path d="M14 6 C 14 6, 16 16, 14 26" stroke="white" strokeWidth="2" strokeOpacity="0.5" fill="none" />
-    <path d="M20 8 C 20 8, 22 16, 20 24" stroke="white" strokeWidth="2" strokeOpacity="0.5" fill="none" />
-    
-    {/* Net/Tangle Overlay */}
-    {isTangled && (
-      <g stroke="#374151" strokeWidth="1" opacity="0.8">
-        <path d="M2 10 L 30 22" />
-        <path d="M2 22 L 30 10" />
-        <path d="M16 2 L 16 30" />
-        <circle cx="16" cy="16" r="14" fill="none" strokeDasharray="4 2" />
-      </g>
-    )}
-  </svg>
-);
-
-const TrashSprite: React.FC = () => (
-  <svg width="28" height="28" viewBox="0 0 28 28" className="drop-shadow-md">
-    {/* Shadow */}
-    <ellipse cx="14" cy="26" rx="8" ry="2" fill="black" opacity="0.2" />
-    
-    {/* Bottle Cap */}
-    <rect x="10" y="2" width="8" height="4" fill="#94a3b8" rx="1"/>
-    
-    {/* Bottle Body */}
-    <path d="M8 6 H 20 L 22 12 V 24 C 22 26, 20 26, 20 26 H 8 C 8 26, 6 26, 6 24 V 12 L 8 6 Z" fill="#3b82f6" fillOpacity="0.7" stroke="#2563eb" strokeWidth="1.5" />
-    
-    {/* Label */}
-    <rect x="7" y="14" width="14" height="6" fill="#cbd5e1" />
-    <path d="M9 16 H 19 M 9 18 H 15" stroke="#64748b" strokeWidth="1" />
-    
-    {/* Highlights */}
-    <path d="M20 8 L 20 12" stroke="white" strokeWidth="1" opacity="0.5" />
-    <path d="M18 22 L 20 22" stroke="white" strokeWidth="1" opacity="0.5" />
-  </svg>
-);
-
-// --- TYPES ---
-
-interface GameZoneProps {
-  userPoints: number;
-  addPoints: (points: number) => void;
-}
-
-interface PlayerState {
-  x: number;
-  y: number;
-  rot: number;
-}
-
-interface Item {
-  id: number;
-  x: number;
-  y: number;
-  type: 'trash' | 'fish' | 'rare' | 'toxic';
-  isTangled?: boolean;
-  value: number;
-  difficulty: number; // Required Rod Level
-}
-
-interface GameData {
-  ecoPoints: number;
-  totalTrashCollected: number;
-  fishRescued: number;
-  
-  // Progression
-  rodLevel: number;
-  bagLevel: number;
-  boatLevel: number;
-  
-  // Skills
-  skills: {
-    cleaning: number;
-    conservation: number;
-    engineering: number;
-  };
-  
-  // Inventory
-  trashInBag: number;
-}
-
-// --- MAIN COMPONENT ---
-
-const GameZone: React.FC<GameZoneProps> = ({ userPoints, addPoints }) => {
-  // Game System State
-  const [hasStarted, setHasStarted] = useState(false);
-  const [showStory, setShowStory] = useState(true);
-  const [activeTab, setActiveTab] = useState<'game' | 'dock' | 'skills' | 'map'>('game');
-  
-  // Gameplay State
-  const [player, setPlayer] = useState<PlayerState>({ x: 0, y: 0, rot: 0 });
-  const [items, setItems] = useState<Item[]>([]);
-  const [isCasting, setIsCasting] = useState(false); // For animation
-  const [fishingTarget, setFishingTarget] = useState<{x: number, y: number} | null>(null);
-  
-  const [gameData, setGameData] = useState<GameData>({
-    ecoPoints: 100, // Starting money
-    totalTrashCollected: 0,
-    fishRescued: 0,
-    rodLevel: 0,
-    bagLevel: 0,
-    boatLevel: 0,
-    skills: { cleaning: 0, conservation: 0, engineering: 0 },
-    trashInBag: 0
-  });
-
-  // UI State
-  const [joystick, setJoystick] = useState({ x: 0, y: 0 });
-  const [notification, setNotification] = useState<string | null>(null);
-  const gameLoopRef = useRef<number>(0);
-  const lastUpdateRef = useRef<number>(Date.now());
-  const keysRef = useRef<{ [key: string]: boolean }>({});
-
-  // --- STATS CALCULATORS ---
-  const getRodStats = useCallback(() => {
-    const lvl = gameData.rodLevel;
-    return {
-      name: RODS[lvl],
-      range: 100 + (lvl * 15) + (gameData.skills.cleaning * 20),
-      speed: 1 + (lvl * 0.1),
-      power: lvl, // Determines what difficulty of trash you can pull
-      multiGrab: Math.floor(lvl / 10) + 1,
-      cost: Math.floor(50 * Math.pow(1.15, lvl))
-    };
-  }, [gameData.rodLevel, gameData.skills.cleaning]);
-
-  const getBagStats = useCallback(() => {
-    const lvl = gameData.bagLevel;
-    return {
-      name: BAGS[lvl],
-      capacity: 10 + (lvl * 5) + (gameData.skills.engineering * 5),
-      cost: Math.floor(40 * Math.pow(1.15, lvl))
-    };
-  }, [gameData.bagLevel, gameData.skills.engineering]);
-
-  const getBoatStats = useCallback(() => {
-    const lvl = gameData.boatLevel;
-    const speed = 4 + (lvl * 0.5) + (gameData.skills.engineering * 0.5);
-    const cost = Math.floor(100 * Math.pow(1.2, lvl));
-    
-    // Boat level determines max travel distance from dock
-    const maxRange = 500 + (lvl * 500); 
-
-    return {
-      name: BOATS[lvl],
-      speed,
-      cost,
-      maxRange
-    };
-  }, [gameData.boatLevel, gameData.skills.engineering]);
-
-  const getCurrentZone = useCallback(() => {
-    const dist = Math.sqrt(player.x * player.x + player.y * player.y);
-    // Find highest zone that matches minDepth
-    return [...ZONES].reverse().find(z => dist >= z.minDepth) || ZONES[0];
-  }, [player]);
-
-  // --- KEYBOARD LISTENERS ---
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => { keysRef.current[e.key.toLowerCase()] = true; };
-    const handleKeyUp = (e: KeyboardEvent) => { keysRef.current[e.key.toLowerCase()] = false; };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, []);
-
-  // --- GAME LOOP ---
-  useEffect(() => {
-    if (!hasStarted) return;
-
-    const loop = () => {
-      const now = Date.now();
-      const dt = (now - lastUpdateRef.current) / 1000;
-      lastUpdateRef.current = now;
-
-      // 1. Movement Logic (Joystick + WASD)
-      const boat = getBoatStats();
-      
-      let inputX = joystick.x;
-      let inputY = joystick.y;
-
-      // Keyboard Overrides
-      if (keysRef.current['w'] || keysRef.current['arrowup']) inputY -= 1;
-      if (keysRef.current['s'] || keysRef.current['arrowdown']) inputY += 1;
-      if (keysRef.current['a'] || keysRef.current['arrowleft']) inputX -= 1;
-      if (keysRef.current['d'] || keysRef.current['arrowright']) inputX += 1;
-
-      // Clamp Magnitude (so diagonal isn't faster)
-      const mag = Math.sqrt(inputX * inputX + inputY * inputY);
-      if (mag > 1) {
-          inputX /= mag;
-          inputY /= mag;
-      }
-
-      if (inputX !== 0 || inputY !== 0) {
-        setPlayer(p => {
-            const nextX = p.x + inputX * boat.speed;
-            const nextY = p.y + inputY * boat.speed;
-            const nextDist = Math.sqrt(nextX*nextX + nextY*nextY);
-
-            // Boat Range Restriction
-            if (nextDist > boat.maxRange) {
-                // If moving further away, block it
-                const currentDist = Math.sqrt(p.x*p.x + p.y*p.y);
-                if (nextDist > currentDist) {
-                     // Check notification throttle to avoid spamming
-                     if (Math.random() > 0.95) setNotification("Rough Waters! Upgrade Boat to go deeper.");
-                     return p; // Don't move
-                }
-            }
-
-            return {
-                x: nextX,
-                y: nextY, 
-                // Rot calc: Atan2(x, -y) creates 0 deg at Up (0,-1)
-                rot: Math.atan2(inputX, -inputY) * (180 / Math.PI)
-            };
-        });
-      }
-
-      // 2. Spawning Items
-      setItems(currentItems => {
-        // Limit total items for performance
-        if (currentItems.length > 50) return currentItems;
-        
-        // Spawn chance based on distance (harder/more rewarding further out)
-        if (Math.random() < 0.05) {
-            const dist = Math.sqrt(player.x * player.x + player.y * player.y);
-            const spawnDist = 600; // spawn items around player but outside view
-            const angle = Math.random() * Math.PI * 2;
-            const x = player.x + Math.sin(angle) * spawnDist;
-            const y = player.y + Math.cos(angle) * spawnDist;
-            
-            const isFish = Math.random() > 0.7;
-            const isTangled = isFish && Math.random() > 0.5;
-            
-            // Difficulty increases with distance
-            const itemDifficulty = Math.floor(dist / 500); // Every 500px requires +1 Rod Level
-
-            return [...currentItems, {
-                id: Date.now() + Math.random(),
-                x, y,
-                type: isFish ? 'fish' : (Math.random() > 0.9 ? 'rare' : 'trash'),
-                isTangled,
-                value: 10 + Math.floor(dist / 100),
-                difficulty: itemDifficulty
-            }];
-        }
-        return currentItems;
-      });
-
-      gameLoopRef.current = requestAnimationFrame(loop);
-    };
-
-    gameLoopRef.current = requestAnimationFrame(loop);
-    return () => {
-      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
-    };
-  }, [hasStarted, joystick, activeTab, getBoatStats, player]);
-
-  // --- INTERACTION HANDLERS ---
-  const handleAction = () => {
-    if (isCasting) return; // Prevent spamming while animation plays
-    
-    // Calculate target logic for animation
-    const rod = getRodStats();
-    let targetX = 0;
-    let targetY = 0;
-    
-    // Find closest items within range for targeting
-    const reachableItems = items.filter(i => {
-      const dx = i.x - player.x;
-      const dy = i.y - player.y;
-      return Math.sqrt(dx*dx + dy*dy) < rod.range;
-    });
-
-    // Determine target based on distance
-    let targetItem = null;
-    let minDist = Infinity;
-    reachableItems.forEach(item => {
-        const d = (item.x - player.x)**2 + (item.y - player.y)**2;
-        if(d < minDist) {
-            minDist = d;
-            targetItem = item;
-        }
-    });
-
-    if (targetItem) {
-        targetX = targetItem.x;
-        targetY = targetItem.y;
-    } else {
-        // Cast ahead if no target
-        const rads = player.rot * (Math.PI / 180);
-        targetX = player.x + Math.sin(rads) * (rod.range * 0.8);
-        targetY = player.y - Math.cos(rads) * (rod.range * 0.8);
-    }
-    
-    setFishingTarget({ x: targetX, y: targetY });
-    setIsCasting(true); // Trigger Animation
-    
-    // DELAY actual collection to match animation (500ms)
-    setTimeout(() => {
-        performFishing();
-        setIsCasting(false);
-        setFishingTarget(null);
-    }, 500);
-  };
-
-  const performFishing = () => {
-    const rod = getRodStats();
-    const bag = getBagStats();
-    
-    // Find closest items within range
-    const reachableItems = items.filter(i => {
-      const dx = i.x - player.x;
-      const dy = i.y - player.y;
-      return Math.sqrt(dx*dx + dy*dy) < rod.range;
-    });
-
-    if (reachableItems.length === 0) {
-        showNotification("Nothing in range!");
-        return;
-    }
-
-    // Collect items up to rod multiGrab limit
-    let collectedCount = 0;
-    const newItems = items.filter(item => {
-      const dx = item.x - player.x;
-      const dy = item.y - player.y;
-      const isInRange = Math.sqrt(dx*dx + dy*dy) < rod.range;
-      
-      if (isInRange && collectedCount < rod.multiGrab) {
-        
-        // CHECK ROD STRENGTH
-        if (item.difficulty > rod.power) {
-            showNotification("Too heavy! Upgrade Rod.");
-            return true; // Keep item
-        }
-
-        if (item.type === 'fish') {
-            if (item.isTangled) {
-                // Rescue!
-                setGameData(prev => ({ 
-                    ...prev, 
-                    fishRescued: prev.fishRescued + 1,
-                    ecoPoints: prev.ecoPoints + (item.value * 2) 
-                }));
-                showNotification(`Rescued Fish! +${item.value*2} pts`);
-                collectedCount++;
-                return false; // Remove from map
-            } else {
-                // Oops, caught a free fish
-                showNotification("Avoid free-swimming fish!");
-                return true; // Keep in map
-            }
-        } else {
-            // Trash
-            if (gameData.trashInBag < bag.capacity) {
-                setGameData(prev => ({
-                    ...prev,
-                    trashInBag: prev.trashInBag + 1,
-                    totalTrashCollected: prev.totalTrashCollected + 1
-                }));
-                showNotification("Trash collected");
-                collectedCount++;
-                return false; // Remove from map
-            } else {
-                showNotification("Bag Full! Return to Dock.");
-                return true;
-            }
-        }
-      }
-      return true;
-    });
-
-    setItems(newItems);
-  }
-
-  const showNotification = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 2000);
-  };
-
-  const sellTrash = () => {
-    if (gameData.trashInBag === 0) return;
-    const value = gameData.trashInBag * 5 * (1 + (gameData.skills.conservation * 0.1));
-    setGameData(prev => ({
-      ...prev,
-      ecoPoints: prev.ecoPoints + Math.floor(value),
-      trashInBag: 0
-    }));
-    // Note: Removed global addPoints to separate game economy from app leaderboard
-    showNotification(`Sold trash for ${Math.floor(value)} EcoPoints!`);
-  };
-
-  const buyUpgrade = (type: 'rod' | 'bag' | 'boat') => {
-    let cost = 0;
-    if (type === 'rod') cost = getRodStats().cost;
-    if (type === 'bag') cost = getBagStats().cost;
-    if (type === 'boat') cost = getBoatStats().cost;
-
-    if (gameData.ecoPoints >= cost) {
-      const levelKey = (type + 'Level') as 'rodLevel' | 'bagLevel' | 'boatLevel';
-      setGameData(prev => ({
-        ...prev,
-        ecoPoints: prev.ecoPoints - cost,
-        [levelKey]: (prev[levelKey] as number) + 1
-      }));
-      showNotification("Upgrade Purchased!");
-    } else {
-      showNotification("Not enough EcoPoints!");
-    }
-  };
-
-  const upgradeSkill = (type: 'cleaning' | 'conservation' | 'engineering') => {
-      // Simple skill cost logic: 100 * (level + 1)
-      const cost = 100 * (gameData.skills[type] + 1);
-      if (gameData.ecoPoints >= cost && gameData.skills[type] < 4) {
-          setGameData(prev => ({
-              ...prev,
-              ecoPoints: prev.ecoPoints - cost,
-              skills: { ...prev.skills, [type]: prev.skills[type] + 1 }
-          }));
-      }
-  };
-
-  // --- RENDER HELPERS ---
-  const currentRod = getRodStats();
-  const currentBag = getBagStats();
-  const currentBoat = getBoatStats();
-  const currentZone = getCurrentZone();
-
-  // --- COMPONENT RENDER ---
-
-  // 1. STORY / INTRO SCREEN
-  if (showStory) {
-    return (
-        <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center p-6 text-white text-center">
-            <div className="max-w-2xl animate-fade-in">
-                <h1 className="text-4xl md:text-6xl font-black text-cyan-400 mb-6 uppercase tracking-tight">Ocean Sweeper</h1>
-                
-                <div className="bg-white/10 p-6 rounded-2xl backdrop-blur-md mb-8 border border-white/20">
-                    <h2 className="text-xl font-bold mb-4 text-emerald-300">Project Initiative: Day 1</h2>
-                    <p className="text-slate-300 mb-4 leading-relaxed">
-                        The oceans are dying under the weight of centuries of pollution. 
-                        Global organizations have failed, but the <strong>Ocean Sweeper Project</strong> has just launched.
-                    </p>
-                    <p className="text-slate-300 mb-4 leading-relaxed">
-                        You are a volunteer. You have a wooden dock, a basic stick rod, and a cloth pouch. 
-                        It isn't much, but it's a start.
-                    </p>
-                    <p className="text-white font-bold text-lg">
-                        Clean the waters. Restore the coral. Save the wildlife.
-                    </p>
-                </div>
-
-                <div className="flex flex-col items-center gap-2 mb-8 text-slate-400 text-sm">
-                   <div className="flex gap-4">
-                       <span className="bg-slate-800 px-3 py-1 rounded">W A S D to Move</span>
-                       <span className="bg-slate-800 px-3 py-1 rounded">Action Button to Clean</span>
-                   </div>
-                </div>
-
-                <button 
-                    onClick={() => { setShowStory(false); setHasStarted(true); }}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-full font-black text-xl shadow-lg shadow-emerald-500/30 transition-all transform hover:scale-105 flex items-center gap-2 mx-auto"
-                >
-                    <Play fill="currentColor" /> BEGIN MISSION
-                </button>
-            </div>
-        </div>
-    );
-  }
-
-  // 2. MAIN GAME INTERFACE
-  return (
-    <div className="relative w-full h-[calc(100vh-80px)] overflow-hidden bg-slate-900 select-none">
-      
-      {/* 2A. GAME VIEW (Map & Player) */}
-      {activeTab === 'game' && (
-        <div className={`absolute inset-0 transition-colors duration-1000 ${currentZone.color}`}>
-           {/* Water Texture Overlay */}
-           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-           
-           {/* World Container (Centered on Player) */}
-           <div 
-             className="absolute left-1/2 top-1/2"
-             style={{ 
-               transform: `translate(${-player.x}px, ${-player.y}px)`,
-               transition: 'transform 0.1s linear'
-             }}
-           >
-                {/* DOCK */}
-                <div className="absolute -translate-x-1/2 -translate-y-1/2 left-0 top-0 w-64 h-64 bg-[#8B4513] rounded-full border-4 border-[#5e2f0d] flex items-center justify-center z-0">
-                    <div className="text-white/50 text-center">
-                        <Anchor size={48} className="mx-auto mb-2 opacity-50"/>
-                        <span className="font-bold tracking-widest block opacity-50">DOCK 01</span>
-                    </div>
-                </div>
-
-                {/* ITEMS */}
-                {items.map(item => (
-                   <div 
-                     key={item.id} 
-                     className="absolute -translate-x-1/2 -translate-y-1/2 transition-all"
-                     style={{ left: item.x, top: item.y }}
-                   >
-                        {item.type === 'fish' ? (
-                            <FishSprite isTangled={item.isTangled || false} />
-                        ) : (
-                            <div className="transform rotate-12 relative">
-                                <TrashSprite />
-                                {/* Show lock if rod too weak */}
-                                {item.difficulty > currentRod.power && (
-                                    <div className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-0.5">
-                                        <Lock size={8} />
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                   </div>
-                ))}
-                
-                {/* FISHING ROD ANIMATION LAYER */}
-                {isCasting && fishingTarget && (
-                    <FishingRodCast start={player} end={fishingTarget} />
-                )}
-
-                {/* PLAYER */}
-                <div 
-                    className="absolute z-20 transition-transform"
-                    style={{ left: player.x, top: player.y, transform: `translate(-50%, -50%) rotate(${player.rot}deg)` }}
-                >
-                    {/* Boat Graphic */}
-                    <div className="relative">
-                        <BoatSprite />
-                        
-                        {/* Range Ring */}
-                        <div 
-                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30 pointer-events-none"
-                            style={{ width: currentRod.range * 2, height: currentRod.range * 2 }}
-                        ></div>
-                    </div>
-                </div>
-           </div>
-
-           {/* --- HUD --- */}
-           
-           {/* Top Left: Status */}
-           <div className="absolute top-4 left-4 flex flex-col gap-2">
-               <div className="bg-white/90 backdrop-blur rounded-xl p-3 shadow-lg flex items-center gap-3 border border-white/50">
-                   <div className="bg-yellow-100 p-2 rounded-full">
-                       <CircleDollarSign className="text-yellow-600" size={20} />
-                   </div>
-                   <div>
-                       <p className="text-[10px] font-bold text-slate-400 uppercase">EcoPoints</p>
-                       <p className="text-xl font-black text-slate-800">{gameData.ecoPoints}</p>
-                   </div>
-               </div>
-               <div className="bg-white/90 backdrop-blur rounded-xl p-3 shadow-lg flex items-center gap-3 border border-white/50">
-                    <div className="bg-blue-100 p-2 rounded-full">
-                       <ShoppingBag className="text-blue-600" size={20} />
-                   </div>
-                   <div className="flex-1">
-                       <p className="text-[10px] font-bold text-slate-400 uppercase">Bag {gameData.trashInBag}/{currentBag.capacity}</p>
-                       <div className="w-24 h-2 bg-slate-200 rounded-full mt-1 overflow-hidden">
-                           <div 
-                            className={`h-full ${gameData.trashInBag >= currentBag.capacity ? 'bg-red-500' : 'bg-green-500'}`} 
-                            style={{ width: `${(gameData.trashInBag / currentBag.capacity) * 100}%` }}
-                           ></div>
-                       </div>
-                   </div>
-               </div>
-           </div>
-
-           {/* Top Right: Zone Info */}
-           <div className="absolute top-4 right-4 bg-black/40 backdrop-blur text-white px-4 py-2 rounded-full text-xs font-bold border border-white/10 flex items-center gap-2">
-               <Compass size={14} /> {currentZone.name}
-           </div>
-
-           {/* Dock Prompt */}
-           {Math.sqrt(player.x*player.x + player.y*player.y) < 150 && (
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-24 animate-bounce">
-                   <button 
-                    onClick={() => setActiveTab('dock')}
-                    className="bg-emerald-500 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2"
-                   >
-                       <Anchor size={18} /> ENTER DOCK
-                   </button>
-               </div>
-           )}
-
-           {/* Notifications */}
-           {notification && (
-               <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-slate-800/90 text-white px-6 py-3 rounded-full font-bold shadow-xl animate-fade-in flex items-center gap-2 z-50 whitespace-nowrap">
-                   <Info size={18} className="text-cyan-400"/> {notification}
-               </div>
-           )}
-
-           {/* Controls: Joystick (Mobile/Desktop) - Moved Up */}
-           <div className="absolute bottom-36 md:bottom-16 left-8 md:hidden">
-               <Joystick onMove={(x, y) => setJoystick({ x, y })} />
-           </div>
-           
-           {/* Desktop Hint */}
-           <div className="hidden md:block absolute bottom-8 left-8 bg-black/30 text-white p-3 rounded-xl backdrop-blur-md">
-               <p className="text-xs font-bold">CONTROLS</p>
-               <div className="flex gap-2 mt-1">
-                   <kbd className="bg-white/20 px-2 py-1 rounded">W</kbd>
-                   <kbd className="bg-white/20 px-2 py-1 rounded">A</kbd>
-                   <kbd className="bg-white/20 px-2 py-1 rounded">S</kbd>
-                   <kbd className="bg-white/20 px-2 py-1 rounded">D</kbd>
-               </div>
-           </div>
-
-           {/* Controls: Action Button - Moved Up */}
-           <div className="absolute bottom-36 md:bottom-16 right-8">
-               <button 
-                onClick={handleAction}
-                disabled={isCasting}
-                className={`w-20 h-20 rounded-full shadow-xl border-4 border-white/30 active:scale-95 transition-transform flex items-center justify-center ${isCasting ? 'bg-cyan-700' : 'bg-cyan-500 hover:bg-cyan-400'}`}
-               >
-                   <ArrowUpCircle size={32} className={`text-white ${isCasting ? 'animate-spin' : ''}`} />
-               </button>
-           </div>
-        </div>
-      )}
-
-      {/* 2B. DOCK VIEW */}
-      {activeTab === 'dock' && (
-          <div className="absolute inset-0 bg-slate-100 overflow-y-auto pb-20">
-              <div className="bg-emerald-600 text-white p-6 pb-12 rounded-b-3xl shadow-lg relative">
-                  <div className="flex justify-between items-center mb-6">
-                      <div className="flex items-center gap-3">
-                          <div className="bg-white/20 p-2 rounded-xl"><Anchor size={24}/></div>
-                          <div>
-                              <h2 className="text-2xl font-black">Port Haven Dock</h2>
-                              <p className="text-emerald-100 text-xs">Level 1 Outpost</p>
-                          </div>
-                      </div>
-                      <button onClick={() => setActiveTab('game')} className="bg-white/20 p-2 rounded-full"><X/></button>
-                  </div>
-                  
-                  {/* Stats Row */}
-                  <div className="flex gap-4 overflow-x-auto pb-2">
-                      <div className="bg-emerald-700/50 p-3 rounded-xl min-w-[120px]">
-                          <p className="text-xs text-emerald-200 font-bold mb-1">TRASH VALUE</p>
-                          <p className="text-2xl font-black">${gameData.trashInBag * 5}</p>
-                      </div>
-                      <div className="bg-emerald-700/50 p-3 rounded-xl min-w-[120px]">
-                          <p className="text-xs text-emerald-200 font-bold mb-1">BALANCE</p>
-                          <p className="text-2xl font-black">${gameData.ecoPoints}</p>
-                      </div>
-                  </div>
-              </div>
-
-              <div className="p-6 -mt-8 space-y-6">
-                  {/* Quick Actions */}
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                      <div>
-                          <h3 className="font-bold text-slate-800">Recycle Center</h3>
-                          <p className="text-slate-500 text-sm">{gameData.trashInBag} items to recycle</p>
-                      </div>
-                      <button 
-                        onClick={sellTrash}
-                        disabled={gameData.trashInBag === 0}
-                        className={`px-6 py-3 rounded-xl font-bold ${gameData.trashInBag > 0 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-slate-200 text-slate-400'}`}
-                      >
-                          Sell All
-                      </button>
-                  </div>
-
-                  {/* SHOP */}
-                  <div className="space-y-4">
-                      <h3 className="font-bold text-slate-400 text-xs uppercase tracking-wider ml-1">Equipment Shop</h3>
-                      
-                      {/* RODS */}
-                      <ShopItem 
-                        icon={<ArrowUpCircle/>} color="bg-blue-500"
-                        title="Fishing Rod" 
-                        currentName={currentRod.name} 
-                        level={gameData.rodLevel} 
-                        maxLevel={RODS.length}
-                        nextCost={getRodStats().cost}
-                        onBuy={() => buyUpgrade('rod')}
-                        canAfford={gameData.ecoPoints >= getRodStats().cost}
-                      />
-
-                      {/* BAGS */}
-                      <ShopItem 
-                        icon={<ShoppingBag/>} color="bg-orange-500"
-                        title="Storage Bag" 
-                        currentName={currentBag.name} 
-                        level={gameData.bagLevel} 
-                        maxLevel={BAGS.length}
-                        nextCost={getBagStats().cost}
-                        onBuy={() => buyUpgrade('bag')}
-                        canAfford={gameData.ecoPoints >= getBagStats().cost}
-                      />
-
-                      {/* BOATS */}
-                      <ShopItem 
-                        icon={<Ship/>} color="bg-indigo-500"
-                        title="Research Boat" 
-                        currentName={currentBoat.name} 
-                        level={gameData.boatLevel} 
-                        maxLevel={BOATS.length}
-                        nextCost={getBoatStats().cost}
-                        onBuy={() => buyUpgrade('boat')}
-                        canAfford={gameData.ecoPoints >= getBoatStats().cost}
-                      />
-                  </div>
-
-                  {/* SKILLS TEASER */}
-                  <button 
-                    onClick={() => setActiveTab('skills')}
-                    className="w-full bg-slate-900 text-white p-4 rounded-xl font-bold flex items-center justify-between shadow-lg"
-                  >
-                      <div className="flex items-center gap-3">
-                          <Zap className="text-yellow-400" />
-                          <span>Skill Tree Mastery</span>
-                      </div>
-                      <span className="bg-white/20 px-2 py-1 rounded text-xs">Open</span>
-                  </button>
-              </div>
-          </div>
-      )}
-
-      {/* 2C. SKILLS VIEW */}
-      {activeTab === 'skills' && (
-          <div className="absolute inset-0 bg-slate-900 text-white overflow-y-auto pb-20">
-              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-slate-800">
-                  <h2 className="text-xl font-bold flex items-center gap-2"><Zap className="text-yellow-400"/> Skill Matrix</h2>
-                  <button onClick={() => setActiveTab('dock')} className="bg-white/10 p-2 rounded-full"><X/></button>
-              </div>
-              
-              <div className="p-6 space-y-8">
-                  <SkillNode 
-                    title="Cleaning Mastery" 
-                    desc="Increases rod range and trash value."
-                    level={gameData.skills.cleaning}
-                    color="text-blue-400"
-                    icon={<Trash2/>}
-                    cost={100 * (gameData.skills.cleaning + 1)}
-                    canAfford={gameData.ecoPoints >= 100 * (gameData.skills.cleaning + 1)}
-                    onUpgrade={() => upgradeSkill('cleaning')}
-                  />
-                  <SkillNode 
-                    title="Conservationist" 
-                    desc="Bonus points for fish rescue & rare finds."
-                    level={gameData.skills.conservation}
-                    color="text-emerald-400"
-                    icon={<Heart/>}
-                    cost={100 * (gameData.skills.conservation + 1)}
-                    canAfford={gameData.ecoPoints >= 100 * (gameData.skills.conservation + 1)}
-                    onUpgrade={() => upgradeSkill('conservation')}
-                  />
-                  <SkillNode 
-                    title="Engineering" 
-                    desc="Boosts boat speed and bag capacity."
-                    level={gameData.skills.engineering}
-                    color="text-orange-400"
-                    icon={<Zap/>}
-                    cost={100 * (gameData.skills.engineering + 1)}
-                    canAfford={gameData.ecoPoints >= 100 * (gameData.skills.engineering + 1)}
-                    onUpgrade={() => upgradeSkill('engineering')}
-                  />
-              </div>
-          </div>
-      )}
-
-      {/* 3. NAVIGATION (Within Game) */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 pb-safe z-40">
-          <NavBtn active={activeTab === 'game'} icon={<Compass/>} label="Ocean" onClick={() => setActiveTab('game')} />
-          <NavBtn active={activeTab === 'dock'} icon={<Anchor/>} label="Dock" onClick={() => setActiveTab('dock')} />
-          <NavBtn active={activeTab === 'skills'} icon={<Zap/>} label="Skills" onClick={() => setActiveTab('skills')} />
-      </div>
-    </div>
-  );
-};
-
-// --- SUB-COMPONENTS ---
-
-const NavBtn: React.FC<{active: boolean, icon: any, label: string, onClick: () => void}> = ({active, icon, label, onClick}) => (
+const NavBtn: React.FC<{active: boolean, icon: any, label: string, onClick: () => void, highlight?: boolean}> = ({active, icon, label, onClick, highlight}) => (
     <button 
         onClick={onClick}
-        className={`flex flex-col items-center justify-center w-16 py-1 rounded-lg transition-colors ${active ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400'}`}
+        className={`flex flex-col items-center justify-center w-16 py-1 rounded-lg transition-colors relative ${active ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400'}`}
     >
+        {highlight && !active && (
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+        )}
         {React.cloneElement(icon, { size: 20, strokeWidth: active ? 3 : 2 })}
         <span className="text-[10px] font-bold mt-1">{label}</span>
     </button>
@@ -991,7 +127,6 @@ const SkillNode: React.FC<any> = ({ title, desc, level, color, icon, cost, canAf
 const Joystick: React.FC<{ onMove: (x: number, y: number) => void }> = ({ onMove }) => {
     const [active, setActive] = useState(false);
     const [pos, setPos] = useState({ x: 0, y: 0 });
-    const center = { x: 50, y: 50 }; // Half of w-24 (96px) roughly, keeping logic simple relative to container
 
     const handleStart = (e: React.TouchEvent | React.MouseEvent) => {
         setActive(true);
@@ -1001,8 +136,18 @@ const Joystick: React.FC<{ onMove: (x: number, y: number) => void }> = ({ onMove
     const handleMove = (e: React.TouchEvent | React.MouseEvent) => {
         if (!active && e.type !== 'mousedown' && e.type !== 'touchstart') return;
         
-        const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+        let clientX, clientY;
+        if ('touches' in e) {
+             if (e.touches.length > 0) {
+                 clientX = e.touches[0].clientX;
+                 clientY = e.touches[0].clientY;
+             } else {
+                 return;
+             }
+        } else {
+             clientX = (e as React.MouseEvent).clientX;
+             clientY = (e as React.MouseEvent).clientY;
+        }
         
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -1031,7 +176,7 @@ const Joystick: React.FC<{ onMove: (x: number, y: number) => void }> = ({ onMove
 
     return (
         <div 
-            className="w-24 h-24 bg-black/20 backdrop-blur rounded-full border border-white/30 flex items-center justify-center touch-none select-none relative"
+            className="w-24 h-24 bg-black/20 backdrop-blur rounded-full border border-white/30 flex items-center justify-center touch-none select-none relative z-50"
             onMouseDown={handleStart}
             onMouseMove={handleMove}
             onMouseUp={handleEnd}
@@ -1046,6 +191,815 @@ const Joystick: React.FC<{ onMove: (x: number, y: number) => void }> = ({ onMove
             ></div>
         </div>
     );
+};
+
+const BoatSprite: React.FC = () => (
+  <svg width="48" height="96" viewBox="0 0 48 96" fill="none" className="drop-shadow-2xl">
+    <path d="M24 94 C 2 50, 8 15, 24 2 C 40 15, 46 50, 44 94 L 4 94 Z" fill="#0f172a" opacity="0.2" transform="translate(4, 4)" />
+    <path d="M24 90 C 30 105, 18 105, 24 90" stroke="white" strokeWidth="4" strokeOpacity="0.5" className="blur-sm" />
+    <path d="M24 2 C 40 15, 46 50, 44 94 L 4 94 C 2 50, 8 15, 24 2 Z" fill="#f8fafc" stroke="#475569" strokeWidth="2"/>
+    <path d="M24 10 C 36 20, 40 50, 38 88 L 10 88 C 8 50, 12 20, 24 10 Z" fill="#cbd5e1"/>
+    <path d="M14 55 H 34 V 75 H 14 Z" fill="#334155" rx="2" />
+    <path d="M16 57 H 32 V 65 H 16 Z" fill="#0ea5e9" />
+    <rect x="18" y="92" width="12" height="6" rx="1" fill="#1e293b" />
+    <path d="M24 2 L 24 20" stroke="#ef4444" strokeWidth="2" />
+    <circle cx="24" cy="80" r="3" fill="#fbbf24" />
+  </svg>
+);
+
+const FishingRodCast: React.FC<{ start: {x:number, y:number}, end: {x:number, y:number} }> = ({ start, end }) => {
+    return (
+        <div className="absolute top-0 left-0 w-0 h-0 pointer-events-none overflow-visible z-30">
+            <svg width="100%" height="100%" className="overflow-visible">
+                <defs>
+                    <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                        <path d="M0,0 L0,6 L6,3 z" fill="#ef4444" />
+                    </marker>
+                </defs>
+                <line 
+                    x1={start.x} 
+                    y1={start.y} 
+                    x2={end.x} 
+                    y2={end.y} 
+                    stroke="white" 
+                    strokeWidth="2" 
+                    strokeLinecap="round"
+                    className="drop-shadow-md"
+                >
+                     <animate attributeName="x2" from={start.x} to={end.x} dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
+                     <animate attributeName="y2" from={start.y} to={end.y} dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
+                     <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.8;1" dur="0.5s" fill="freeze" />
+                </line>
+                <circle cx={end.x} cy={end.y} r="6" fill="#ef4444" stroke="white" strokeWidth="2">
+                     <animate attributeName="opacity" from="0" to="1" dur="0.1s" fill="freeze" />
+                     <animate attributeName="cx" from={start.x} to={end.x} dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
+                     <animate attributeName="cy" from={start.y} to={end.y} dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
+                     <animate attributeName="r" values="6;8;0" keyTimes="0;0.8;1" dur="0.5s" begin="0.25s" fill="freeze" />
+                </circle>
+            </svg>
+        </div>
+    )
+};
+
+const FishSprite: React.FC<{isTangled: boolean}> = ({ isTangled }) => (
+  <svg width="32" height="32" viewBox="0 0 32 32" className={isTangled ? "animate-pulse" : "animate-bounce"}>
+    <ellipse cx="16" cy="28" rx="10" ry="3" fill="black" opacity="0.2" />
+    <path d="M4 16 C 4 10, 10 4, 16 4 C 26 4, 30 16, 26 26 C 20 30, 4 22, 4 16 Z" fill={isTangled ? "#fb7185" : "#facc15"} stroke={isTangled ? "#be123c" : "#ca8a04"} strokeWidth="2" />
+    <path d="M26 16 L 32 10 L 32 22 Z" fill={isTangled ? "#fb7185" : "#facc15"} stroke={isTangled ? "#be123c" : "#ca8a04"} strokeWidth="2" strokeLinejoin="round" />
+    <circle cx="10" cy="12" r="2.5" fill="white" />
+    <circle cx="10.5" cy="12" r="1" fill="black" />
+    <path d="M14 16 L 8 20 L 14 20 Z" fill={isTangled ? "#e11d48" : "#eab308"} />
+    <path d="M14 6 C 14 6, 16 16, 14 26" stroke="white" strokeWidth="2" strokeOpacity="0.5" fill="none" />
+    <path d="M20 8 C 20 8, 22 16, 20 24" stroke="white" strokeWidth="2" strokeOpacity="0.5" fill="none" />
+    {isTangled && (
+      <g stroke="#374151" strokeWidth="1" opacity="0.8">
+        <path d="M2 10 L 30 22" />
+        <path d="M2 22 L 30 10" />
+        <path d="M16 2 L 16 30" />
+        <circle cx="16" cy="16" r="14" fill="none" strokeDasharray="4 2" />
+      </g>
+    )}
+  </svg>
+);
+
+const TrashSprite: React.FC = () => (
+  <svg width="28" height="28" viewBox="0 0 28 28" className="drop-shadow-md">
+    <ellipse cx="14" cy="26" rx="8" ry="2" fill="black" opacity="0.2" />
+    <rect x="10" y="2" width="8" height="4" fill="#94a3b8" rx="1"/>
+    <path d="M8 6 H 20 L 22 12 V 24 C 22 26, 20 26, 20 26 H 8 C 8 26, 6 26, 6 24 V 12 L 8 6 Z" fill="#3b82f6" fillOpacity="0.7" stroke="#2563eb" strokeWidth="1.5" />
+    <rect x="7" y="14" width="14" height="6" fill="#cbd5e1" />
+    <path d="M9 16 H 19 M 9 18 H 15" stroke="#64748b" strokeWidth="1" />
+    <path d="M20 8 L 20 12" stroke="white" strokeWidth="1" opacity="0.5" />
+    <path d="M18 22 L 20 22" stroke="white" strokeWidth="1" opacity="0.5" />
+  </svg>
+);
+
+// --- TYPES ---
+
+interface GameZoneProps {
+  userPoints: number;
+  addPoints: (points: number) => void;
+  gardenLevel: number;
+}
+
+interface PlayerState {
+  x: number;
+  y: number;
+  rot: number;
+}
+
+interface Item {
+  id: number;
+  x: number;
+  y: number;
+  type: 'trash' | 'fish' | 'rare' | 'toxic';
+  isTangled?: boolean;
+  value: number;
+  difficulty: number; // Required Rod Level
+}
+
+interface GameData {
+  ecoPoints: number;
+  totalTrashCollected: number;
+  fishRescued: number;
+  rodLevel: number;
+  bagLevel: number;
+  boatLevel: number;
+  skills: {
+    cleaning: number;
+    conservation: number;
+    engineering: number;
+  };
+  trashInBag: number;
+}
+
+// --- MAIN COMPONENT ---
+
+const GameZone: React.FC<GameZoneProps> = ({ userPoints, addPoints, gardenLevel }) => {
+  const [hasStarted, setHasStarted] = useState(false);
+  const [showStory, setShowStory] = useState(true);
+  const [activeTab, setActiveTab] = useState<'game' | 'dock' | 'skills'>('game');
+  
+  const [player, setPlayer] = useState<PlayerState>({ x: 0, y: 0, rot: 0 });
+  const [items, setItems] = useState<Item[]>([]);
+  const [isCasting, setIsCasting] = useState(false); 
+  const [fishingTarget, setFishingTarget] = useState<{x: number, y: number} | null>(null);
+  
+  const [gameData, setGameData] = useState<GameData>({
+    ecoPoints: 100,
+    totalTrashCollected: 0,
+    fishRescued: 0,
+    rodLevel: 0,
+    bagLevel: 0,
+    boatLevel: 0,
+    skills: { cleaning: 0, conservation: 0, engineering: 0 },
+    trashInBag: 0
+  });
+
+  const [joystick, setJoystick] = useState({ x: 0, y: 0 });
+  const [notification, setNotification] = useState<string | null>(null);
+  
+  // Refs for Game Loop / Async Logic
+  const gameLoopRef = useRef<number>(0);
+  const lastUpdateRef = useRef<number>(Date.now());
+  const keysRef = useRef<{ [key: string]: boolean }>({});
+  
+  // State Refs for avoiding stale closures in async timeout
+  const itemsRef = useRef(items);
+  const playerRef = useRef(player);
+  const gameDataRef = useRef(gameData);
+
+  // Sync Refs
+  useEffect(() => { itemsRef.current = items; }, [items]);
+  useEffect(() => { playerRef.current = player; }, [player]);
+  useEffect(() => { gameDataRef.current = gameData; }, [gameData]);
+
+  // --- STATS CALCULATORS ---
+  const getRodStats = useCallback((data: GameData) => {
+    const lvl = data.rodLevel;
+    return {
+      name: RODS[lvl] || RODS[RODS.length-1],
+      range: 100 + (lvl * 15) + (data.skills.cleaning * 20),
+      speed: 1 + (lvl * 0.1),
+      power: lvl, 
+      multiGrab: Math.floor(lvl / 10) + 1,
+      cost: Math.floor(50 * Math.pow(1.15, lvl))
+    };
+  }, []);
+
+  const getBagStats = useCallback((data: GameData) => {
+    const lvl = data.bagLevel;
+    return {
+      name: BAGS[lvl] || BAGS[BAGS.length-1],
+      capacity: 10 + (lvl * 5) + (data.skills.engineering * 5),
+      cost: Math.floor(40 * Math.pow(1.15, lvl))
+    };
+  }, []);
+
+  const getBoatStats = useCallback((data: GameData) => {
+    const lvl = data.boatLevel;
+    const speed = 4 + (lvl * 0.5) + (data.skills.engineering * 0.5);
+    const cost = Math.floor(100 * Math.pow(1.2, lvl));
+    const maxRange = 500 + (lvl * 500); 
+
+    return {
+      name: BOATS[lvl] || BOATS[BOATS.length-1],
+      speed,
+      cost,
+      maxRange
+    };
+  }, []);
+
+  const getCurrentZone = useCallback(() => {
+    const dist = Math.sqrt(player.x * player.x + player.y * player.y);
+    return [...ZONES].reverse().find(z => dist >= z.minDepth) || ZONES[0];
+  }, [player]);
+
+  // --- KEYBOARD LISTENERS ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { keysRef.current[e.key.toLowerCase()] = true; };
+    const handleKeyUp = (e: KeyboardEvent) => { keysRef.current[e.key.toLowerCase()] = false; };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // --- GAME LOOP ---
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    const loop = () => {
+      const now = Date.now();
+      lastUpdateRef.current = now;
+
+      // 1. Movement Logic
+      const boat = getBoatStats(gameDataRef.current);
+      
+      let inputX = joystick.x;
+      let inputY = joystick.y;
+
+      if (keysRef.current['w'] || keysRef.current['arrowup']) inputY -= 1;
+      if (keysRef.current['s'] || keysRef.current['arrowdown']) inputY += 1;
+      if (keysRef.current['a'] || keysRef.current['arrowleft']) inputX -= 1;
+      if (keysRef.current['d'] || keysRef.current['arrowright']) inputX += 1;
+
+      const mag = Math.sqrt(inputX * inputX + inputY * inputY);
+      if (mag > 1) {
+          inputX /= mag;
+          inputY /= mag;
+      }
+
+      if (inputX !== 0 || inputY !== 0) {
+        setPlayer(p => {
+            const nextX = p.x + inputX * boat.speed;
+            const nextY = p.y + inputY * boat.speed;
+            const nextDist = Math.sqrt(nextX*nextX + nextY*nextY);
+
+            if (nextDist > boat.maxRange) {
+                const currentDist = Math.sqrt(p.x*p.x + p.y*p.y);
+                if (nextDist > currentDist) {
+                     if (Math.random() > 0.98) showNotification("Rough Waters! Upgrade Boat to go deeper.");
+                     return p; 
+                }
+            }
+            return {
+                x: nextX,
+                y: nextY, 
+                rot: Math.atan2(inputX, -inputY) * (180 / Math.PI)
+            };
+        });
+      }
+
+      // 2. Spawning Items
+      setItems(currentItems => {
+        if (currentItems.length > 50) return currentItems;
+        if (Math.random() < 0.05) {
+            const currentP = playerRef.current;
+            const spawnDist = 600; 
+            const angle = Math.random() * Math.PI * 2;
+            const x = currentP.x + Math.sin(angle) * spawnDist;
+            const y = currentP.y + Math.cos(angle) * spawnDist;
+            
+            const dist = Math.sqrt(x*x + y*y);
+
+            const isFish = Math.random() > 0.7;
+            const isTangled = isFish && Math.random() > 0.5;
+            const itemDifficulty = Math.floor(dist / 500); 
+
+            return [...currentItems, {
+                id: Date.now() + Math.random(),
+                x, y,
+                type: isFish ? 'fish' : (Math.random() > 0.9 ? 'rare' : 'trash'),
+                isTangled,
+                value: 10 + Math.floor(dist / 100),
+                difficulty: itemDifficulty
+            }];
+        }
+        return currentItems;
+      });
+
+      gameLoopRef.current = requestAnimationFrame(loop);
+    };
+
+    gameLoopRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+    };
+  }, [hasStarted, joystick, activeTab]);
+
+  // --- ACTIONS ---
+  const handleAction = () => {
+    if (isCasting) return; 
+    
+    // Read from REF to get latest state for calculation
+    const currentP = playerRef.current;
+    const currentI = itemsRef.current;
+    const currentData = gameDataRef.current;
+    const rod = getRodStats(currentData);
+
+    let targetX = 0;
+    let targetY = 0;
+    
+    // Logic: Find closest reachable item
+    let targetItem = null;
+    let minDist = Infinity;
+    
+    currentI.forEach(item => {
+        const d = (item.x - currentP.x)**2 + (item.y - currentP.y)**2;
+        if(d < rod.range**2 && d < minDist) {
+            minDist = d;
+            targetItem = item;
+        }
+    });
+
+    if (targetItem) {
+        targetX = (targetItem as any).x;
+        targetY = (targetItem as any).y;
+    } else {
+        const rads = currentP.rot * (Math.PI / 180);
+        targetX = currentP.x + Math.sin(rads) * (rod.range * 0.8);
+        targetY = currentP.y - Math.cos(rads) * (rod.range * 0.8);
+    }
+    
+    setFishingTarget({ x: targetX, y: targetY });
+    setIsCasting(true); 
+    
+    setTimeout(() => {
+        performFishing();
+        setIsCasting(false);
+        setFishingTarget(null);
+    }, 500);
+  };
+
+  const performFishing = () => {
+    // CRITICAL: Read from REFs to avoid stale state in timeout
+    const currentP = playerRef.current;
+    const currentI = itemsRef.current;
+    const currentData = gameDataRef.current;
+    
+    const rod = getRodStats(currentData);
+    const bag = getBagStats(currentData);
+    
+    const reachable = currentI.filter(i => (i.x - currentP.x)**2 + (i.y - currentP.y)**2 < rod.range**2);
+
+    if (reachable.length === 0) {
+        showNotification("Nothing in range!");
+        return;
+    }
+
+    let collectedCount = 0;
+    let bagCount = currentData.trashInBag;
+    let ecoPoints = currentData.ecoPoints;
+    let fishRescued = currentData.fishRescued;
+    let totalTrash = currentData.totalTrashCollected;
+
+    const newItems = currentI.filter(item => {
+      const distSq = (item.x - currentP.x)**2 + (item.y - currentP.y)**2;
+      
+      if (distSq < rod.range**2 && collectedCount < rod.multiGrab) {
+        
+        if (item.difficulty > rod.power) {
+            showNotification("Too heavy! Upgrade Rod.");
+            return true; 
+        }
+
+        if (item.type === 'fish') {
+            if (item.isTangled) {
+                fishRescued++;
+                ecoPoints += item.value * 2;
+                showNotification(`Rescued Fish! +${item.value*2} pts`);
+                collectedCount++;
+                return false; 
+            } else {
+                showNotification("Avoid free-swimming fish!");
+                return true; 
+            }
+        } else {
+            if (bagCount < bag.capacity) {
+                bagCount++;
+                totalTrash++;
+                showNotification("Trash collected");
+                collectedCount++;
+                return false; 
+            } else {
+                showNotification("Bag Full! Return to Dock.");
+                return true;
+            }
+        }
+      }
+      return true;
+    });
+
+    setItems(newItems);
+    setGameData(prev => ({
+        ...prev,
+        ecoPoints,
+        fishRescued,
+        totalTrashCollected: totalTrash,
+        trashInBag: bagCount
+    }));
+  };
+
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 2000);
+  };
+
+  const sellTrash = () => {
+    if (gameData.trashInBag === 0) return;
+    
+    // Removed Garden Bonus calculation as requested
+    const value = gameData.trashInBag * 5 * (1 + (gameData.skills.conservation * 0.1));
+    
+    setGameData(prev => ({
+      ...prev,
+      ecoPoints: prev.ecoPoints + Math.floor(value),
+      trashInBag: 0
+    }));
+    showNotification(`Sold trash for ${Math.floor(value)} EcoPoints!`);
+  };
+
+  const buyUpgrade = (type: 'rod' | 'bag' | 'boat') => {
+    let cost = 0;
+    const currentData = gameData;
+    if (type === 'rod') cost = getRodStats(currentData).cost;
+    if (type === 'bag') cost = getBagStats(currentData).cost;
+    if (type === 'boat') cost = getBoatStats(currentData).cost;
+
+    if (gameData.ecoPoints >= cost) {
+      const levelKey = (type + 'Level') as 'rodLevel' | 'bagLevel' | 'boatLevel';
+      setGameData(prev => ({
+        ...prev,
+        ecoPoints: prev.ecoPoints - cost,
+        [levelKey]: (prev[levelKey] as number) + 1
+      }));
+      showNotification("Upgrade Purchased!");
+    } else {
+      showNotification("Not enough EcoPoints!");
+    }
+  };
+  
+  const upgradeSkill = (type: 'cleaning' | 'conservation' | 'engineering') => {
+      const cost = 100 * (gameData.skills[type] + 1);
+      if (gameData.ecoPoints >= cost && gameData.skills[type] < 4) {
+          setGameData(prev => ({
+              ...prev,
+              ecoPoints: prev.ecoPoints - cost,
+              skills: { ...prev.skills, [type]: prev.skills[type] + 1 }
+          }));
+      }
+  };
+
+  const currentRod = getRodStats(gameData);
+  const currentBag = getBagStats(gameData);
+  const currentBoat = getBoatStats(gameData);
+  const currentZone = getCurrentZone();
+
+  // --- STORY SCREEN ---
+  if (showStory) {
+    return (
+        <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center p-6 text-white text-center">
+             <div className="absolute inset-0 z-0 bg-slate-800">
+                <img 
+                    src="https://lh3.googleusercontent.com/d/1wuQ0-ezBuMOqqbFu_9-Fn5qe3ePzXeml=s2000" 
+                    alt="Ocean Sweeper" 
+                    className="w-full h-full object-cover opacity-30 blur-sm transition-opacity duration-1000"
+                    onLoad={(e) => e.currentTarget.style.opacity = '0.3'}
+                    onError={(e) => {
+                        e.currentTarget.style.display = 'none'; // Hide if fails
+                    }}
+                />
+             </div>
+
+            <div className="max-w-2xl animate-fade-in relative z-10">
+                <div className="w-full max-w-sm mx-auto mb-6 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20 bg-slate-800 aspect-video relative">
+                     <img 
+                        src="https://lh3.googleusercontent.com/d/1wuQ0-ezBuMOqqbFu_9-Fn5qe3ePzXeml=s2000" 
+                        alt="Ocean Sweeper Game" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                            // Fallback if main image fails
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-cyan-900');
+                            if(e.currentTarget.parentElement) e.currentTarget.parentElement.innerHTML = '<span class="text-4xl">🌊</span>';
+                        }}
+                     />
+                </div>
+                
+                <h1 className="text-4xl md:text-6xl font-black text-cyan-400 mb-6 uppercase tracking-tight drop-shadow-lg">Ocean Sweeper</h1>
+                
+                <div className="bg-black/60 p-6 rounded-2xl backdrop-blur-md mb-8 border border-white/20 shadow-xl">
+                    <h2 className="text-xl font-bold mb-4 text-emerald-300">Project Initiative: Day 1</h2>
+                    <p className="text-slate-300 mb-4 leading-relaxed">
+                        The oceans are dying under the weight of centuries of pollution. 
+                        Global organizations have failed, but the <strong>Ocean Sweeper Project</strong> has just launched.
+                    </p>
+                    <p className="text-white font-bold text-lg">
+                        Clean the waters. Restore the coral. Save the wildlife.
+                    </p>
+                </div>
+
+                <div className="flex flex-col items-center gap-2 mb-8 text-slate-400 text-sm">
+                   <div className="flex gap-4">
+                       <span className="bg-slate-800/80 px-3 py-1 rounded border border-white/10">W A S D to Move</span>
+                       <span className="bg-slate-800/80 px-3 py-1 rounded border border-white/10">Action Button to Clean</span>
+                   </div>
+                </div>
+
+                <button 
+                    onClick={() => { setShowStory(false); setHasStarted(true); }}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-full font-black text-xl shadow-lg shadow-emerald-500/30 transition-all transform hover:scale-105 flex items-center gap-2 mx-auto"
+                >
+                    <Play fill="currentColor" /> BEGIN MISSION
+                </button>
+            </div>
+        </div>
+    );
+  }
+
+  // --- MAIN RENDER ---
+  return (
+    <div className="relative w-full h-[calc(100vh-80px)] overflow-hidden bg-slate-900 select-none">
+      
+      {/* GAME VIEW */}
+      {activeTab === 'game' && (
+        <div className={`absolute inset-0 transition-colors duration-1000 ${currentZone.color}`}>
+           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+           
+           <div 
+             className="absolute left-1/2 top-1/2"
+             style={{ 
+               transform: `translate(${-player.x}px, ${-player.y}px)`,
+               transition: 'transform 0.1s linear'
+             }}
+           >
+                <div className="absolute -translate-x-1/2 -translate-y-1/2 left-0 top-0 w-64 h-64 bg-[#8B4513] rounded-full border-4 border-[#5e2f0d] flex items-center justify-center z-0">
+                    <div className="text-white/50 text-center">
+                        <Anchor size={48} className="mx-auto mb-2 opacity-50"/>
+                        <span className="font-bold tracking-widest block opacity-50">DOCK 01</span>
+                    </div>
+                </div>
+
+                {items.map(item => (
+                   <div 
+                     key={item.id} 
+                     className="absolute -translate-x-1/2 -translate-y-1/2 transition-all"
+                     style={{ left: item.x, top: item.y }}
+                   >
+                        {item.type === 'fish' ? (
+                            <FishSprite isTangled={item.isTangled || false} />
+                        ) : (
+                            <div className="transform rotate-12 relative">
+                                <TrashSprite />
+                                {item.difficulty > currentRod.power && (
+                                    <div className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-0.5">
+                                        <Lock size={8} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                   </div>
+                ))}
+                
+                {isCasting && fishingTarget && (
+                    <FishingRodCast start={player} end={fishingTarget} />
+                )}
+
+                <div 
+                    className="absolute z-20 transition-transform"
+                    style={{ left: player.x, top: player.y, transform: `translate(-50%, -50%) rotate(${player.rot}deg)` }}
+                >
+                    <div className="relative">
+                        <BoatSprite />
+                        <div 
+                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30 pointer-events-none"
+                            style={{ width: currentRod.range * 2, height: currentRod.range * 2 }}
+                        ></div>
+                    </div>
+                </div>
+           </div>
+
+           {/* HUD */}
+           <div className="absolute top-4 left-4 flex flex-col gap-2 z-40">
+               <div className="bg-white/90 backdrop-blur rounded-xl p-3 shadow-lg flex items-center gap-3 border border-white/50">
+                   <div className="bg-yellow-100 p-2 rounded-full">
+                       <CircleDollarSign className="text-yellow-600" size={20} />
+                   </div>
+                   <div>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase">EcoPoints</p>
+                       <p className="text-xl font-black text-slate-800">{gameData.ecoPoints}</p>
+                   </div>
+               </div>
+               <div className="bg-white/90 backdrop-blur rounded-xl p-3 shadow-lg flex items-center gap-3 border border-white/50">
+                    <div className="bg-blue-100 p-2 rounded-full">
+                       <ShoppingBag className="text-blue-600" size={20} />
+                   </div>
+                   <div className="flex-1">
+                       <p className="text-[10px] font-bold text-slate-400 uppercase">Bag {gameData.trashInBag}/{currentBag.capacity}</p>
+                       <div className="w-24 h-2 bg-slate-200 rounded-full mt-1 overflow-hidden">
+                           <div 
+                            className={`h-full ${gameData.trashInBag >= currentBag.capacity ? 'bg-red-500' : 'bg-green-500'}`} 
+                            style={{ width: `${(gameData.trashInBag / currentBag.capacity) * 100}%` }}
+                           ></div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+
+           <div className="absolute top-4 right-4 bg-black/40 backdrop-blur text-white px-4 py-2 rounded-full text-xs font-bold border border-white/10 flex items-center gap-2 z-40">
+               <Compass size={14} /> {currentZone.name}
+           </div>
+
+           {Math.sqrt(player.x*player.x + player.y*player.y) < 150 && (
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-24 animate-bounce z-40">
+                   <button 
+                    onClick={() => setActiveTab('dock')}
+                    className="bg-emerald-500 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2"
+                   >
+                       <Anchor size={18} /> ENTER DOCK
+                   </button>
+               </div>
+           )}
+
+           {notification && (
+               <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-slate-800/90 text-white px-6 py-3 rounded-full font-bold shadow-xl animate-fade-in flex items-center gap-2 z-50 whitespace-nowrap">
+                   <Info size={18} className="text-cyan-400"/> {notification}
+               </div>
+           )}
+
+           <div className="absolute bottom-36 md:bottom-16 left-8 md:hidden z-40">
+               <Joystick onMove={(x, y) => setJoystick({ x, y })} />
+           </div>
+           
+           <div className="hidden md:block absolute bottom-8 left-8 bg-black/30 text-white p-3 rounded-xl backdrop-blur-md z-40">
+               <p className="text-xs font-bold">CONTROLS</p>
+               <div className="flex gap-2 mt-1">
+                   <kbd className="bg-white/20 px-2 py-1 rounded">W</kbd>
+                   <kbd className="bg-white/20 px-2 py-1 rounded">A</kbd>
+                   <kbd className="bg-white/20 px-2 py-1 rounded">S</kbd>
+                   <kbd className="bg-white/20 px-2 py-1 rounded">D</kbd>
+               </div>
+           </div>
+
+           <div className="absolute bottom-36 md:bottom-16 right-8 z-40">
+               <button 
+                onClick={handleAction}
+                disabled={isCasting}
+                className={`w-20 h-20 rounded-full shadow-xl border-4 border-white/30 active:scale-95 transition-transform flex items-center justify-center ${isCasting ? 'bg-cyan-700' : 'bg-cyan-500 hover:bg-cyan-400'}`}
+               >
+                   <ArrowUpCircle size={32} className={`text-white ${isCasting ? 'animate-spin' : ''}`} />
+               </button>
+           </div>
+        </div>
+      )}
+
+      {/* DOCK VIEW */}
+      {activeTab === 'dock' && (
+          <div className="absolute inset-0 bg-slate-100 overflow-y-auto pb-20 z-40">
+              <div className="bg-emerald-600 text-white p-6 pb-12 rounded-b-3xl shadow-lg relative">
+                  <div className="flex justify-between items-center mb-6">
+                      <div className="flex items-center gap-3">
+                          <div className="bg-white/20 p-2 rounded-xl"><Anchor size={24}/></div>
+                          <div>
+                              <h2 className="text-2xl font-black">Port Haven Dock</h2>
+                              <p className="text-emerald-100 text-xs">Level 1 Outpost</p>
+                          </div>
+                      </div>
+                      <button onClick={() => setActiveTab('game')} className="bg-white/20 p-2 rounded-full"><X/></button>
+                  </div>
+                  
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                      <div className="bg-emerald-700/50 p-3 rounded-xl min-w-[120px]">
+                          <p className="text-xs text-emerald-200 font-bold mb-1">TRASH VALUE</p>
+                          <p className="text-2xl font-black">${gameData.trashInBag * 5}</p>
+                      </div>
+                      <div className="bg-emerald-700/50 p-3 rounded-xl min-w-[120px]">
+                          <p className="text-xs text-emerald-200 font-bold mb-1">BALANCE</p>
+                          <p className="text-2xl font-black">${gameData.ecoPoints}</p>
+                      </div>
+                  </div>
+              </div>
+
+              <div className="p-6 -mt-8 space-y-6">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                      <div>
+                          <h3 className="font-bold text-slate-800">Recycle Center</h3>
+                          <p className="text-slate-500 text-sm">{gameData.trashInBag} items to recycle</p>
+                      </div>
+                      <button 
+                        onClick={sellTrash}
+                        disabled={gameData.trashInBag === 0}
+                        className={`px-6 py-3 rounded-xl font-bold ${gameData.trashInBag > 0 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-slate-200 text-slate-400'}`}
+                      >
+                          Sell All
+                      </button>
+                  </div>
+
+                  <div className="space-y-4">
+                      <h3 className="font-bold text-slate-400 text-xs uppercase tracking-wider ml-1">Equipment Shop</h3>
+                      
+                      <ShopItem 
+                        icon={<ArrowUpCircle/>} color="bg-blue-500"
+                        title="Fishing Rod" 
+                        currentName={currentRod.name} 
+                        level={gameData.rodLevel} 
+                        maxLevel={RODS.length}
+                        nextCost={getRodStats(gameData).cost}
+                        onBuy={() => buyUpgrade('rod')}
+                        canAfford={gameData.ecoPoints >= getRodStats(gameData).cost}
+                      />
+
+                      <ShopItem 
+                        icon={<ShoppingBag/>} color="bg-orange-500"
+                        title="Storage Bag" 
+                        currentName={currentBag.name} 
+                        level={gameData.bagLevel} 
+                        maxLevel={BAGS.length}
+                        nextCost={getBagStats(gameData).cost}
+                        onBuy={() => buyUpgrade('bag')}
+                        canAfford={gameData.ecoPoints >= getBagStats(gameData).cost}
+                      />
+
+                      <ShopItem 
+                        icon={<Ship/>} color="bg-indigo-500"
+                        title="Research Boat" 
+                        currentName={currentBoat.name} 
+                        level={gameData.boatLevel} 
+                        maxLevel={BOATS.length}
+                        nextCost={getBoatStats(gameData).cost}
+                        onBuy={() => buyUpgrade('boat')}
+                        canAfford={gameData.ecoPoints >= getBoatStats(gameData).cost}
+                      />
+                  </div>
+
+                  <button 
+                    onClick={() => setActiveTab('skills')}
+                    className="w-full bg-slate-900 text-white p-4 rounded-xl font-bold flex items-center justify-between shadow-lg"
+                  >
+                      <div className="flex items-center gap-3">
+                          <Zap className="text-yellow-400" />
+                          <span>Skill Tree Mastery</span>
+                      </div>
+                      <span className="bg-white/20 px-2 py-1 rounded text-xs">Open</span>
+                  </button>
+              </div>
+          </div>
+      )}
+
+      {/* SKILLS VIEW */}
+      {activeTab === 'skills' && (
+          <div className="absolute inset-0 bg-slate-900 text-white overflow-y-auto pb-20 z-40">
+              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-slate-800">
+                  <h2 className="text-xl font-bold flex items-center gap-2"><Zap className="text-yellow-400"/> Skill Matrix</h2>
+                  <button onClick={() => setActiveTab('dock')} className="bg-white/10 p-2 rounded-full"><X/></button>
+              </div>
+              
+              <div className="p-6 space-y-8">
+                  <SkillNode 
+                    title="Cleaning Mastery" 
+                    desc="Increases rod range and trash value."
+                    level={gameData.skills.cleaning}
+                    color="text-blue-400"
+                    icon={<Trash2/>}
+                    cost={100 * (gameData.skills.cleaning + 1)}
+                    canAfford={gameData.ecoPoints >= 100 * (gameData.skills.cleaning + 1)}
+                    onUpgrade={() => upgradeSkill('cleaning')}
+                  />
+                  <SkillNode 
+                    title="Conservationist" 
+                    desc="Bonus points for fish rescue & rare finds."
+                    level={gameData.skills.conservation}
+                    color="text-emerald-400"
+                    icon={<Heart/>}
+                    cost={100 * (gameData.skills.conservation + 1)}
+                    canAfford={gameData.ecoPoints >= 100 * (gameData.skills.conservation + 1)}
+                    onUpgrade={() => upgradeSkill('conservation')}
+                  />
+                  <SkillNode 
+                    title="Engineering" 
+                    desc="Boosts boat speed and bag capacity."
+                    level={gameData.skills.engineering}
+                    color="text-orange-400"
+                    icon={<Zap/>}
+                    cost={100 * (gameData.skills.engineering + 1)}
+                    canAfford={gameData.ecoPoints >= 100 * (gameData.skills.engineering + 1)}
+                    onUpgrade={() => upgradeSkill('engineering')}
+                  />
+              </div>
+          </div>
+      )}
+
+      {/* NAVIGATION */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 pb-safe z-50">
+          <NavBtn active={activeTab === 'game'} icon={<Compass/>} label="Ocean" onClick={() => setActiveTab('game')} />
+          <NavBtn active={activeTab === 'dock'} icon={<Anchor/>} label="Dock" onClick={() => setActiveTab('dock')} />
+          <NavBtn active={activeTab === 'skills'} icon={<Zap/>} label="Skills" onClick={() => setActiveTab('skills')} />
+      </div>
+    </div>
+  );
 };
 
 export default GameZone;

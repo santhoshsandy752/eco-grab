@@ -9,6 +9,7 @@ import EcoAssistant from './views/EcoAssistant';
 import GameZone from './views/GameZone';
 import Auth from './views/Auth';
 import ProfileHub from './views/ProfileHub';
+import EcoGarden from './views/EcoGarden';
 import { Trophy, Leaf, Download, LogOut, User as UserIcon } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -92,7 +93,16 @@ const App: React.FC = () => {
 
   // If not authenticated, show Auth Screen
   if (!user) {
-      return <Auth onLogin={setUser} />;
+      return <Auth onLogin={(u) => {
+          // Ensure new user object has inventory structure
+          setUser({
+              ...u,
+              gardenLevel: u.gardenLevel || 0,
+              gardenSize: u.gardenSize || 9,
+              inventory: u.inventory || {},
+              gardenSlots: u.gardenSlots || []
+          });
+      }} />;
   }
 
   const renderContent = () => {
@@ -111,9 +121,11 @@ const App: React.FC = () => {
       case Tab.AI:
         return <EcoAssistant />;
       case Tab.GAMES:
-        return <GameZone userPoints={user.points} addPoints={addPoints} />;
+        return <GameZone userPoints={user.points} addPoints={addPoints} gardenLevel={user.gardenLevel || 0} />;
       case Tab.PROFILE:
         return <ProfileHub user={user} onUpdateUser={updateUser} />;
+      case Tab.GARDEN:
+        return <EcoGarden user={user} onUpdateUser={updateUser} />;
       default:
         return <Dashboard user={user} addPoints={addPoints} />;
     }
@@ -146,7 +158,8 @@ const App: React.FC = () => {
               activeTab === Tab.CLAN ? 'Clan Headquarters' :
               activeTab === Tab.UPLOAD ? 'Action Center' :
               activeTab === Tab.AI ? 'Eco Assistant' : 
-              activeTab === Tab.GAMES ? 'Arcade Zone' : 'Profile Studio'
+              activeTab === Tab.GAMES ? 'Arcade Zone' :
+              activeTab === Tab.GARDEN ? 'My Sanctuary' : 'Profile Studio'
             }</h1>
           </div>
 

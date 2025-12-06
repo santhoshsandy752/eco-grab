@@ -1,24 +1,88 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { User } from '../types';
-import { Camera, Check, Lock, ShoppingBag, User as UserIcon, Palette, Image as ImageIcon } from 'lucide-react';
+import { Camera, Check, Lock, ShoppingBag, User as UserIcon, Palette, Image as ImageIcon, Search } from 'lucide-react';
 
 interface ProfileHubProps {
   user: User;
   onUpdateUser: (updates: Partial<User>) => void;
 }
 
-const COSMETIC_SHOP = [
-  { id: 'avatar_bear', name: 'Polar Bear', cost: 200, src: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Bear&backgroundColor=b6e3f4' },
-  { id: 'avatar_fox', name: 'Arctic Fox', cost: 350, src: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Fox&backgroundColor=ffdfbf' },
-  { id: 'avatar_tiger', name: 'Bengal Tiger', cost: 500, src: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Tiger&backgroundColor=ffdfbf' },
-  { id: 'avatar_panda', name: 'Giant Panda', cost: 600, src: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Panda&backgroundColor=b6e3f4' },
-  { id: 'avatar_eagle', name: 'Golden Eagle', cost: 800, src: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Eagle&backgroundColor=ffdfbf' },
-  { id: 'avatar_hero', name: 'Eco Hero', cost: 1000, src: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Hero&backgroundColor=c0aede&clothing=blazerAndShirt' },
-];
+// Helper to generate a large shop inventory
+const generateShopInventory = () => {
+    const items = [];
+
+    // COLLECTION 1: ECO WARRIORS (Humans)
+    const warriors = [
+        'Ranger', 'Scout', 'Captain', 'Guardian', 'Medic', 'Botanist', 'Diver', 'Pilot', 'Hiker', 'Surfer', 
+        'Camper', 'Scientist', 'Volunteer', 'Recycler', 'Activist', 'Farmer', 'Gardener', 'Biologist', 'Geologist', 'Astronomer', 
+        'Vlogger', 'Influencer', 'Reporter', 'Photographer', 'Artist'
+    ];
+    warriors.forEach((name, i) => {
+        items.push({
+            id: `warrior_${i}`,
+            name: `Eco ${name}`,
+            category: 'Human',
+            cost: 100 + (i * 20),
+            src: `https://api.dicebear.com/9.x/avataaars/svg?seed=${name}&backgroundColor=c0aede`
+        });
+    });
+
+    // COLLECTION 2: ROBO CLEANERS (Robots)
+    const robots = [
+        'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 
+        'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron', 'Pi', 'Rho', 'Sigma', 'Tau', 'Upsilon', 
+        'Phi', 'Chi', 'Psi', 'Omega', 'Zero'
+    ];
+    robots.forEach((name, i) => {
+        items.push({
+            id: `robo_${i}`,
+            name: `Bot ${name}`,
+            category: 'Robot',
+            cost: 250 + (i * 30),
+            src: `https://api.dicebear.com/9.x/bottts/svg?seed=${name}&backgroundColor=ffdfbf`
+        });
+    });
+
+    // COLLECTION 3: NATURE SPIRITS (Fantasy)
+    const spirits = [
+        'Willow', 'River', 'Storm', 'Ember', 'Cloud', 'Leaf', 'Rose', 'Daisy', 'Fern', 'Moss', 
+        'Rain', 'Snow', 'Sun', 'Moon', 'Star', 'Sky', 'Wind', 'Terra', 'Aqua', 'Ignis', 
+        'Aero', 'Flora', 'Fauna', 'Bloom', 'Root'
+    ];
+    spirits.forEach((name, i) => {
+        items.push({
+            id: `spirit_${i}`,
+            name: `Spirit ${name}`,
+            category: 'Spirit',
+            cost: 500 + (i * 50),
+            src: `https://api.dicebear.com/9.x/lorelei/svg?seed=${name}&backgroundColor=b6e3f4`
+        });
+    });
+
+    // COLLECTION 4: RETRO PIXELS (8-Bit)
+    const pixels = [
+        'Retro', 'Bit', 'Byte', 'Glitch', 'Neo', 'Cyber', 'Punk', 'Tech', 'Data', 'Code', 
+        'Link', 'Zelda', 'Mario', 'Sonic', 'Mega', 'Pac', 'Space', 'Invader', 'Pong', 'Tetris', 
+        'Doom', 'Quake', 'Halo', 'Portal', 'Steam'
+    ];
+    pixels.forEach((name, i) => {
+        items.push({
+            id: `pixel_${i}`,
+            name: `8-Bit ${name}`,
+            category: 'Pixel',
+            cost: 150 + (i * 15),
+            src: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${name}`
+        });
+    });
+
+    return items;
+};
+
+const COSMETIC_SHOP = generateShopInventory();
 
 const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser }) => {
   const [activeTab, setActiveTab] = useState<'wardrobe' | 'shop'>('wardrobe');
+  const [shopFilter, setShopFilter] = useState<string>('All');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -64,6 +128,11 @@ const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser }) => {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const filteredShopItems = useMemo(() => {
+      if (shopFilter === 'All') return COSMETIC_SHOP;
+      return COSMETIC_SHOP.filter(item => item.category === shopFilter);
+  }, [shopFilter]);
+
   return (
     <div className="space-y-6 animate-fade-in">
       
@@ -77,8 +146,16 @@ const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser }) => {
       {/* Header Profile Card */}
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
         <div className="relative group">
-          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 shadow-inner bg-slate-50">
-            <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 shadow-inner bg-slate-50 relative">
+            <img 
+                src={user.avatar} 
+                alt="Profile" 
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                    // Fallback to initial if image fails
+                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${user.name}&background=16a34a&color=fff`;
+                }}
+            />
           </div>
           <button 
             onClick={() => fileInputRef.current?.click()}
@@ -149,7 +226,14 @@ const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser }) => {
                  onClick={() => handleEquip(item.src)}
                  className={`aspect-square rounded-xl border-2 p-2 cursor-pointer relative transition-all ${user.avatar === item.src ? 'border-green-500 bg-green-50 ring-2 ring-green-200' : 'border-slate-100 hover:border-slate-300'}`}
                >
-                  <img src={item.src} alt={item.name} className="w-full h-full object-contain" />
+                  <img 
+                    src={item.src} 
+                    alt={item.name} 
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                        e.currentTarget.style.display = 'none'; // Hide if broken in wardrobe
+                    }}
+                  />
                   {user.avatar === item.src && (
                     <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full shadow-sm">
                       <Check size={12} strokeWidth={3} />
@@ -169,23 +253,46 @@ const ProfileHub: React.FC<ProfileHubProps> = ({ user, onUpdateUser }) => {
         </div>
       ) : (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
              <h3 className="font-bold text-lg flex items-center gap-2"><ShoppingBag className="text-green-600"/> Avatar Shop</h3>
+             
+             {/* Filters */}
+             <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+                 {['All', 'Human', 'Robot', 'Spirit', 'Pixel'].map(cat => (
+                     <button
+                        key={cat}
+                        onClick={() => setShopFilter(cat)}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${shopFilter === cat ? 'bg-white shadow text-green-600' : 'text-slate-500 hover:text-slate-800'}`}
+                     >
+                         {cat}
+                     </button>
+                 ))}
+             </div>
+
              <span className="text-sm font-bold bg-amber-100 text-amber-800 px-3 py-1 rounded-full">Balance: {user.points} pts</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-             {COSMETIC_SHOP.map(item => {
+             {filteredShopItems.map(item => {
                const isOwned = ownedItems.includes(item.id);
                const canAfford = user.points >= item.cost;
 
                return (
                  <div key={item.id} className="border border-slate-200 rounded-xl p-3 flex flex-col relative group hover:shadow-lg transition-shadow">
-                    <div className="aspect-square bg-slate-50 rounded-lg mb-3 p-2">
-                        <img src={item.src} alt={item.name} className="w-full h-full object-contain" />
+                    <div className="aspect-square bg-slate-50 rounded-lg mb-3 p-2 flex items-center justify-center">
+                        <img 
+                            src={item.src} 
+                            alt={item.name} 
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                                // Fallback for shop preview
+                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${item.name}&background=f1f5f9&color=64748b`;
+                            }}
+                        />
                     </div>
                     <div className="flex-1">
                         <h4 className="font-bold text-sm text-slate-800">{item.name}</h4>
+                        <p className="text-[10px] text-slate-400 font-medium">{item.category}</p>
                     </div>
                     
                     <button

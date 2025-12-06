@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, Task } from '../types';
 import { CheckCircle2, Circle, Flame, Calendar, ArrowRight, Leaf, Trophy, X, Crown, Medal, User as UserIcon } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell } from 'recharts';
 
 interface DashboardProps {
   user: User;
@@ -147,13 +148,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
                         </span>
                     </div>
                 </div>
-                <div className="w-20 h-20 relative bg-white/10 rounded-full p-1 backdrop-blur-md hidden sm:block">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
+                {/* Fixed Size Chart to avoid ResponsiveContainer errors on hidden/mobile */}
+                <div className="w-20 h-20 relative bg-white/10 rounded-full p-1 backdrop-blur-md hidden sm:flex items-center justify-center">
+                    <PieChart width={70} height={70}>
                         <Pie
                             data={data}
                             innerRadius={28}
-                            outerRadius={38}
+                            outerRadius={35}
                             paddingAngle={0}
                             dataKey="value"
                             stroke="none"
@@ -162,9 +163,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
-                        </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">
+                    </PieChart>
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold pointer-events-none">
                         {percentage}%
                     </div>
                 </div>

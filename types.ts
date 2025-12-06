@@ -6,6 +6,10 @@ export interface User {
   avatar: string;
   clanId?: string;
   ownedItems?: string[]; // IDs of purchased cosmetics
+  gardenLevel?: number;
+  gardenSize?: number; // Total number of available slots
+  inventory?: Record<string, number>; // Seed ID -> Quantity
+  gardenSlots?: { slotId: number; plantId: string; plantedAt: number }[];
 }
 
 export interface Clan {
@@ -55,5 +59,6 @@ export enum Tab {
   UPLOAD = 'UPLOAD',
   AI = 'AI',
   GAMES = 'GAMES',
-  PROFILE = 'PROFILE'
+  PROFILE = 'PROFILE',
+  GARDEN = 'GARDEN'
 }

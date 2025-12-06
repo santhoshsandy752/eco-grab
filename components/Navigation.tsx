@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Users, Camera, Bot, Gamepad2, Leaf } from 'lucide-react';
+import { Home, Users, Camera, Bot, Gamepad2, Leaf, Sprout } from 'lucide-react';
 import { Tab } from '../types';
 
 interface NavigationProps {
@@ -10,10 +10,11 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
   const navItems = [
     { id: Tab.HOME, icon: Home, label: 'Home' },
-    { id: Tab.CLAN, icon: Users, label: 'Clan' },
+    { id: Tab.GARDEN, icon: Sprout, label: 'Garden' },
     { id: Tab.UPLOAD, icon: Camera, label: 'Action', highlight: true },
-    { id: Tab.AI, icon: Bot, label: 'EcoBot' },
     { id: Tab.GAMES, icon: Gamepad2, label: 'Games' },
+    { id: Tab.CLAN, icon: Users, label: 'Clan' },
+    { id: Tab.AI, icon: Bot, label: 'EcoBot' },
   ];
 
   return (
