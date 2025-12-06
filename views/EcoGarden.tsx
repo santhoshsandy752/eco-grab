@@ -116,6 +116,7 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
       if(confirm("Dig up this plant? It will be lost.")) {
           const newSlots = gardenSlots.filter(s => s.slotId !== slotId);
           onUpdateUser({ gardenSlots: newSlots });
+          showNotification("Plant removed.");
       }
   };
 
@@ -141,7 +142,7 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
   return (
     <div className="space-y-6 animate-fade-in pb-24">
         {notification && (
-            <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-2 rounded-full shadow-xl text-sm font-bold animate-bounce">
+            <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-2 rounded-full shadow-xl text-sm font-bold animate-bounce whitespace-nowrap">
                 {notification}
             </div>
         )}
@@ -182,7 +183,10 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
             <div className="space-y-6">
                 {/* Inventory Strip */}
                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-3">Your Seeds (Tap to Select)</p>
+                    <div className="flex justify-between items-center mb-3">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Your Seeds (Tap to Select)</p>
+                        <p className="text-[10px] text-slate-400 font-medium italic">Double-click plants to remove</p>
+                    </div>
                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                         {Object.keys(inventory).filter(k => inventory[k] > 0).length === 0 && (
                             <p className="text-sm text-slate-400 italic">No seeds. Visit the shop!</p>
@@ -221,7 +225,8 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
                             return (
                                 <div 
                                     key={index}
-                                    onClick={() => planted ? removePlant(index) : plantSeed(index)}
+                                    onClick={() => !planted && plantSeed(index)}
+                                    onDoubleClick={() => planted && removePlant(index)}
                                     className={`
                                         aspect-square rounded-2xl border-2 flex items-center justify-center relative cursor-pointer transition-all active:scale-95
                                         ${planted 
@@ -231,7 +236,7 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
                                     `}
                                 >
                                     {planted ? (
-                                        <div className="text-center animate-fade-in">
+                                        <div className="text-center animate-fade-in select-none">
                                             <div className="text-4xl drop-shadow-md">{seedInfo?.icon}</div>
                                             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white/80 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider text-green-900 whitespace-nowrap backdrop-blur-sm shadow-sm">
                                                 {seedInfo?.name}
