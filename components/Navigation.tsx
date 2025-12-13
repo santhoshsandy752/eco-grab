@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Home, Users, Camera, Bot, Gamepad2, Leaf, Sprout } from 'lucide-react';
 import { Tab } from '../types';
+import Logo from './Logo';
 
 interface NavigationProps {
   activeTab: Tab;
@@ -58,9 +60,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
       {/* Desktop Sidebar Navigation */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 fixed h-full z-50 shadow-sm">
         <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-          <div className="bg-green-100 p-2 rounded-xl">
-            <Leaf className="text-green-600 fill-green-600" size={24} />
-          </div>
+          <Logo size={42} />
           <span className="font-bold text-xl text-slate-800 tracking-tight">EcoGrab</span>
         </div>
 

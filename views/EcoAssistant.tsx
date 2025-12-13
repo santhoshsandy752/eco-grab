@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { sendMessageToEcoBot } from '../services/geminiService';
 import { ChatMessage } from '../types';
@@ -57,7 +58,7 @@ const EcoAssistant: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] bg-slate-50">
+    <div className="flex flex-col h-[calc(100vh-80px)] bg-green-50">
       <div className="bg-emerald-600 p-4 text-white shadow-md z-10">
         <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-full">

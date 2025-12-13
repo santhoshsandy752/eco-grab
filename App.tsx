@@ -11,6 +11,7 @@ import Auth from './views/Auth';
 import ProfileHub from './views/ProfileHub';
 import EcoGarden from './views/EcoGarden';
 import { Trophy, Leaf, Download, LogOut, User as UserIcon } from 'lucide-react';
+import Logo from './components/Logo';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
@@ -18,6 +19,9 @@ const App: React.FC = () => {
   // Auth state: Undefined initially means user is NOT logged in.
   const [user, setUser] = useState<User | undefined>(undefined);
   
+  // Visiting state: Stores the user we are currently visiting (read-only mode for Garden)
+  const [visitingUser, setVisitingUser] = useState<User | undefined>(undefined);
+
   // Clans state: Initialize from localStorage if available
   const [clans, setClans] = useState<Clan[]>(() => {
       try {
@@ -87,6 +91,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
       if (confirm("Are you sure you want to log out?")) {
         setUser(undefined);
+        setVisitingUser(undefined);
         setActiveTab(Tab.HOME); // Reset tab
       }
   };
@@ -146,7 +151,14 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case Tab.HOME:
-        return <Dashboard user={user} addPoints={addPoints} />;
+        return <Dashboard 
+            user={user} 
+            addPoints={addPoints} 
+            onVisitGarden={(targetUser) => {
+                setVisitingUser(targetUser);
+                setActiveTab(Tab.GARDEN);
+            }} 
+        />;
       case Tab.CLAN:
         return <ClanHub 
             user={user} 
@@ -163,17 +175,27 @@ const App: React.FC = () => {
       case Tab.PROFILE:
         return <ProfileHub user={user} onUpdateUser={updateUser} onDeleteAccount={handleDeleteAccount} />;
       case Tab.GARDEN:
-        return <EcoGarden user={user} onUpdateUser={updateUser} />;
+        // Render either the visiting user or the current logged in user
+        return <EcoGarden 
+            user={visitingUser || user} 
+            onUpdateUser={updateUser} 
+            isVisiting={!!visitingUser}
+            onExitVisit={() => setVisitingUser(undefined)}
+        />;
       default:
-        return <Dashboard user={user} addPoints={addPoints} />;
+        return <Dashboard user={user} addPoints={addPoints} onVisitGarden={() => {}} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+    <div className="min-h-screen bg-green-50 flex font-sans text-slate-900">
       
       {/* Navigation (Sidebar on Desktop, Bottom bar on Mobile) */}
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navigation activeTab={activeTab} onTabChange={(tab) => {
+          // Clear visiting state if navigating away via menu
+          if (visitingUser) setVisitingUser(undefined);
+          setActiveTab(tab);
+      }} />
 
       {/* Main Content Wrapper */}
       <main className="flex-1 md:ml-64 relative flex flex-col min-h-screen transition-all duration-300">
@@ -183,15 +205,14 @@ const App: React.FC = () => {
           
           {/* Mobile Logo Only */}
           <div className="flex items-center gap-2 md:hidden">
-            <div className="bg-green-100 p-2 rounded-lg">
-              <Leaf className="text-green-600" size={20} />
-            </div>
+            <Logo size={32} />
             <span className="font-bold text-xl text-slate-800 tracking-tight">EcoGrab</span>
           </div>
 
           {/* Desktop Title */}
           <div className="hidden md:block">
             <h1 className="text-xl font-bold text-slate-800">{
+              visitingUser ? `Visiting ${visitingUser.name}` :
               activeTab === Tab.HOME ? 'Dashboard' : 
               activeTab === Tab.CLAN ? 'Clan Headquarters' :
               activeTab === Tab.UPLOAD ? 'Action Center' :
@@ -209,7 +230,10 @@ const App: React.FC = () => {
 
             {/* User Profile - Clickable to open ProfileHub */}
             <div 
-                onClick={() => setActiveTab(Tab.PROFILE)}
+                onClick={() => {
+                    setVisitingUser(undefined);
+                    setActiveTab(Tab.PROFILE);
+                }}
                 className="flex items-center gap-2 bg-slate-100 pl-1 pr-3 py-1 rounded-full border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors group"
                 title="Customize Profile"
             >

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, Clan, ClanMessage } from '../types';
 import { Users, Shield, Send, Trophy, Sword, Target, Crown, Medal, User as UserIcon, AlertTriangle, Plus, Search, LogOut, Info } from 'lucide-react';
@@ -212,7 +213,7 @@ const ClanHub: React.FC<ClanHubProps> = ({ user, clans, onUpdateUser, onCreateCl
       switch(view) {
         case 'chat':
             return (
-                <div className="flex-1 flex flex-col bg-slate-50 h-[600px] md:h-[500px]">
+                <div className="flex-1 flex flex-col bg-green-50 h-[600px] md:h-[500px]">
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {messages.map(msg => (
                         <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
@@ -371,7 +372,7 @@ const ClanHub: React.FC<ClanHubProps> = ({ user, clans, onUpdateUser, onCreateCl
 
   // --- MAIN CLAN HUB VIEW ---
   return (
-    <div className="flex flex-col h-full bg-slate-50 md:rounded-2xl md:overflow-hidden md:border md:border-slate-200 md:shadow-sm animate-fade-in">
+    <div className="flex flex-col h-full bg-green-50 md:rounded-2xl md:overflow-hidden md:border md:border-slate-200 md:shadow-sm animate-fade-in">
       
       {/* Clan Header Information */}
       <div className="bg-indigo-600 text-white p-6 shadow-md relative overflow-hidden">
@@ -439,7 +440,7 @@ const ClanHub: React.FC<ClanHubProps> = ({ user, clans, onUpdateUser, onCreateCl
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 bg-slate-50 md:h-[500px] overflow-y-auto custom-scrollbar">
+      <div className="flex-1 bg-green-50 md:h-[500px] overflow-y-auto custom-scrollbar">
         {renderContent()}
       </div>
     </div>

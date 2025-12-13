@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
-import { Leaf, Mail, Lock, User as UserIcon, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import Logo from '../components/Logo';
 
 interface AuthProps {
   onLogin: (user: User) => void;
@@ -87,7 +88,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
       {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-green-200 rounded-full blur-3xl opacity-30"></div>
@@ -99,11 +100,9 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         
         {/* Form Section */}
         <div className="p-8 w-full">
-            <div className="flex items-center gap-2 mb-8 justify-center">
-                <div className="bg-green-100 p-2 rounded-xl">
-                    <Leaf className="text-green-600 fill-green-600" size={24} />
-                </div>
-                <span className="font-bold text-2xl text-slate-800 tracking-tight">EcoGrab</span>
+            <div className="flex items-center gap-3 mb-8 justify-center">
+                <Logo size={48} />
+                <span className="font-bold text-3xl text-slate-800 tracking-tight">EcoGrab</span>
             </div>
 
             <div className="mb-6 text-center">

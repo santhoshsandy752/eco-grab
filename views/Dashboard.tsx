@@ -1,15 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Task } from '../types';
-import { CheckCircle2, Circle, Flame, Calendar, ArrowRight, Leaf, Trophy, X, Crown, Medal, User as UserIcon } from 'lucide-react';
+import { CheckCircle2, Circle, Flame, Calendar, ArrowRight, Leaf, Trophy, X, Crown, Medal, User as UserIcon, Eye } from 'lucide-react';
 import { PieChart, Pie, Cell } from 'recharts';
 
 interface DashboardProps {
   user: User;
   addPoints: (amount: number) => void;
+  onVisitGarden: (user: User) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, addPoints, onVisitGarden }) => {
   const [tasks, setTasks] = useState<Task[]>([
     { id: '1', title: 'Recycle 3 plastic bottles', description: 'Upload a photo of you recycling.', points: 50, completed: false, type: 'daily' },
     { id: '2', title: 'Plant a seed', description: 'Start your own garden.', points: 100, completed: false, type: 'league' },
@@ -25,7 +26,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
   });
 
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [leaderboardData, setLeaderboardData] = useState<User[]>([]);
 
   useEffect(() => {
     const updateTime = () => {
@@ -68,20 +69,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
           try {
               const stored = localStorage.getItem('eco_users');
               if (stored) {
-                  const users: any[] = JSON.parse(stored);
-                  const data = users.map(u => ({
-                      id: u.id,
-                      name: u.name,
-                      points: u.points,
-                      avatar: u.avatar,
-                      isMe: u.id === user.id
-                  })).sort((a, b) => b.points - a.points);
+                  const users: User[] = JSON.parse(stored);
+                  const data = users.sort((a, b) => b.points - a.points);
                   setLeaderboardData(data);
               } else {
-                   setLeaderboardData([{ id: user.id, name: user.name, points: user.points, avatar: user.avatar, isMe: true }]);
+                   setLeaderboardData([user]);
               }
           } catch (e) {
-              setLeaderboardData([{ id: user.id, name: user.name, points: user.points, avatar: user.avatar, isMe: true }]);
+              setLeaderboardData([user]);
           }
       }
   }, [showLeaderboard, user]);
@@ -293,6 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
                     ) : (
                         leaderboardData.map((u, index) => {
                             const rank = index + 1;
+                            const isMe = u.id === user.id;
                             let rankIcon = <span className="font-bold text-slate-400 w-6 text-center">{rank}</span>;
                             let bgClass = "bg-white";
                             let borderClass = "border-slate-100";
@@ -308,7 +304,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
                             }
 
                             // Highlight Me
-                            if ((u as any).isMe) {
+                            if (isMe) {
                                 bgClass = "bg-green-50";
                                 borderClass = "border-green-200 shadow-sm sticky top-0 bottom-0 z-10"; // Sticky effect for user
                             }
@@ -316,17 +312,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
                             return (
                                 <div 
                                     key={u.id} 
-                                    className={`flex items-center gap-4 p-4 border-b ${borderClass} ${bgClass} transition-colors hover:bg-slate-100`}
+                                    onClick={() => !isMe && onVisitGarden(u)}
+                                    className={`flex items-center gap-4 p-4 border-b ${borderClass} ${bgClass} transition-colors ${!isMe ? 'hover:bg-slate-100 cursor-pointer group' : ''}`}
                                 >
                                     <div className="w-8 flex justify-center shrink-0">
                                         {rankIcon}
                                     </div>
-                                    <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300 shrink-0">
+                                    <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300 shrink-0 relative">
                                         <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className={`font-bold text-sm ${(u as any).isMe ? 'text-green-700' : 'text-slate-800'}`}>
-                                            {u.name} {(u as any).isMe && '(You)'}
+                                        <h4 className={`font-bold text-sm ${isMe ? 'text-green-700' : 'text-slate-800'}`}>
+                                            {u.name} {isMe && '(You)'}
                                         </h4>
                                         <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
                                             Guardian
@@ -334,7 +331,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
                                     </div>
                                     <div className="text-right">
                                         <p className="font-black text-slate-800">{u.points.toLocaleString()}</p>
-                                        <p className="text-[10px] text-slate-400 font-bold">PTS</p>
+                                        
+                                        {!isMe && (
+                                            <div className="text-[10px] text-green-600 font-bold flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Eye size={10} /> Visit
+                                            </div>
+                                        )}
+                                        {isMe && <p className="text-[10px] text-slate-400 font-bold">PTS</p>}
                                     </div>
                                 </div>
                             );
@@ -344,7 +347,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, addPoints }) => {
                 
                 {/* Footer Tip */}
                 <div className="p-3 bg-slate-100 text-center text-[10px] text-slate-400 font-medium shrink-0">
-                    Leaderboard resets in {timeState.daysRemaining} days
+                    Tap on a player to visit their garden
                 </div>
             </div>
         </div>

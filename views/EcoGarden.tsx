@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
-import { Sprout, ShoppingBag, ArrowUpCircle, Flower, Trees, Check, Lock, Shovel, Hammer, Maximize, AlertTriangle, Trash2, X } from 'lucide-react';
+import { Sprout, ShoppingBag, ArrowUpCircle, Flower, Trees, Check, Lock, Shovel, Hammer, Maximize, AlertTriangle, Trash2, X, Home } from 'lucide-react';
 
 interface EcoGardenProps {
   user: User;
   onUpdateUser: (updates: Partial<User>) => void;
+  isVisiting?: boolean;
+  onExitVisit?: () => void;
 }
 
 const SEEDS = [
@@ -59,7 +61,7 @@ const SEEDS = [
     { id: 'crown', name: 'Royal Garden', cost: 250000, icon: '👑', desc: 'The ultimate flex.' }
 ];
 
-const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
+const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser, isVisiting = false, onExitVisit }) => {
   const [activeTab, setActiveTab] = useState<'garden' | 'shop'>('garden');
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -75,6 +77,7 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
   };
 
   const buySeed = (seedId: string, cost: number) => {
+      if (isVisiting) return;
       if (user.points >= cost) {
           const newInventory = { ...inventory };
           newInventory[seedId] = (newInventory[seedId] || 0) + 1;
@@ -90,6 +93,7 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
   };
 
   const plantSeed = (slotId: number) => {
+      if (isVisiting) return;
       if (!selectedSeed) {
           showNotification("Select a seed first!");
           return;
@@ -114,6 +118,7 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
   };
 
   const confirmDigUp = () => {
+      if (isVisiting) return;
       if (deleteSlotId !== null) {
           const newSlots = gardenSlots.filter(s => s.slotId !== deleteSlotId);
           onUpdateUser({ gardenSlots: newSlots });
@@ -123,6 +128,7 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
   };
 
   const handleSlotClick = (index: number, isPlanted: boolean) => {
+      if (isVisiting) return;
       if (!isPlanted) {
           plantSeed(index);
       } else {
@@ -131,12 +137,14 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
   };
 
   const handleSlotDoubleClick = (index: number, isPlanted: boolean) => {
+      if (isVisiting) return;
       if (isPlanted) {
           setDeleteSlotId(index);
       }
   };
 
   const expandGarden = () => {
+      if (isVisiting) return;
       const cost = Math.floor((currentGardenSize / 3) * 1000);
       if (user.points >= cost) {
           if (currentGardenSize >= 30) {
@@ -164,67 +172,82 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
         )}
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-500 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
+        <div className={`text-white p-6 rounded-3xl shadow-lg relative overflow-hidden transition-colors ${isVisiting ? 'bg-indigo-600' : 'bg-gradient-to-r from-green-600 to-emerald-500'}`}>
             <div className="relative z-10 flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-black mb-1">My Sanctuary</h2>
-                    <p className="text-emerald-100 text-sm">Grow your personal ecosystem.</p>
+                    <h2 className="text-2xl font-black mb-1">{isVisiting ? `${user.name}'s Garden` : 'My Sanctuary'}</h2>
+                    <p className={`${isVisiting ? 'text-indigo-200' : 'text-emerald-100'} text-sm`}>
+                        {isVisiting ? 'Viewing garden mode' : 'Grow your personal ecosystem.'}
+                    </p>
                 </div>
-                <div className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
-                    <span className="text-xs font-bold text-emerald-100 uppercase">Balance</span>
-                    <p className="text-xl font-black">{user.points} pts</p>
-                </div>
+                {isVisiting ? (
+                    <button 
+                        onClick={onExitVisit}
+                        className="bg-white text-indigo-700 px-4 py-2 rounded-xl font-bold text-sm shadow-md hover:bg-indigo-50 transition-colors flex items-center gap-2"
+                    >
+                        <Home size={16} /> Return Home
+                    </button>
+                ) : (
+                    <div className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
+                        <span className="text-xs font-bold text-emerald-100 uppercase">Balance</span>
+                        <p className="text-xl font-black">{user.points} pts</p>
+                    </div>
+                )}
             </div>
             <div className="absolute -right-6 -bottom-10 opacity-20 rotate-12"><Sprout size={150} /></div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200">
-            <button 
-                onClick={() => setActiveTab('garden')}
-                className={`flex-1 py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === 'garden' ? 'bg-green-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
-            >
-                <Flower size={18} /> Garden Grid
-            </button>
-            <button 
-                onClick={() => setActiveTab('shop')}
-                className={`flex-1 py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === 'shop' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
-            >
-                <ShoppingBag size={18} /> Seed Shop
-            </button>
-        </div>
+        {/* Tabs - Hidden when visiting */}
+        {!isVisiting && (
+            <div className="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200">
+                <button 
+                    onClick={() => setActiveTab('garden')}
+                    className={`flex-1 py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === 'garden' ? 'bg-green-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                    <Flower size={18} /> Garden Grid
+                </button>
+                <button 
+                    onClick={() => setActiveTab('shop')}
+                    className={`flex-1 py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === 'shop' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                    <ShoppingBag size={18} /> Seed Shop
+                </button>
+            </div>
+        )}
 
         {/* GARDEN VIEW */}
         {activeTab === 'garden' && (
             <div className="space-y-6">
-                {/* Inventory Strip */}
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-3">Your Seeds (Tap to Select)</p>
-                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                        {Object.keys(inventory).filter(k => inventory[k] > 0).length === 0 && (
-                            <p className="text-sm text-slate-400 italic">No seeds. Visit the shop!</p>
-                        )}
-                        {Object.entries(inventory).map(([seedId, count]) => {
-                            if (count <= 0) return null;
-                            const seedInfo = SEEDS.find(s => s.id === seedId);
-                            if (!seedInfo) return null;
-                            const isSelected = selectedSeed === seedId;
+                {/* Inventory Strip - Hidden when visiting */}
+                {!isVisiting && (
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <p className="text-xs font-bold text-slate-400 uppercase mb-3">Your Seeds (Tap to Select)</p>
+                        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                            {Object.keys(inventory).filter(k => inventory[k] > 0).length === 0 && (
+                                <p className="text-sm text-slate-400 italic">No seeds. Visit the shop!</p>
+                            )}
+                            {Object.entries(inventory).map(([seedId, count]) => {
+                                if (count <= 0) return null;
+                                const seedInfo = SEEDS.find(s => s.id === seedId);
+                                if (!seedInfo) return null;
+                                const isSelected = selectedSeed === seedId;
 
-                            return (
-                                <button
-                                    key={seedId}
-                                    onClick={() => setSelectedSeed(isSelected ? null : seedId)}
-                                    className={`relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl transition-all ${isSelected ? 'border-green-500 bg-green-50 scale-110 shadow-md' : 'border-slate-200 bg-slate-50'}`}
-                                >
-                                    {seedInfo.icon}
-                                    <span className="absolute -top-2 -right-2 bg-slate-900 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                                        {count}
-                                    </span>
-                                </button>
-                            )
-                        })}
+                                return (
+                                    <button
+                                        key={seedId}
+                                        onClick={() => setSelectedSeed(isSelected ? null : seedId)}
+                                        className={`relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl transition-all ${isSelected ? 'border-green-500 bg-green-50 scale-110 shadow-md' : 'border-slate-200 bg-slate-50'}`}
+                                    >
+                                        {seedInfo.icon}
+                                        <span className="absolute -top-2 -right-2 bg-slate-900 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                                            {count}
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* The Grid */}
                 <div className="bg-[#795548] rounded-3xl p-6 shadow-inner relative border-4 border-[#5d4037]">
@@ -241,11 +264,13 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
                                     onClick={() => handleSlotClick(index, !!planted)}
                                     onDoubleClick={() => handleSlotDoubleClick(index, !!planted)}
                                     className={`
-                                        aspect-square rounded-2xl border-2 flex items-center justify-center relative cursor-pointer transition-all active:scale-95
+                                        aspect-square rounded-2xl border-2 flex items-center justify-center relative transition-all
                                         ${planted 
                                             ? 'bg-gradient-to-b from-green-300 to-green-100 border-green-400 shadow-sm' 
-                                            : 'bg-[#5d4037]/50 border-[#8d6e63] hover:bg-[#8d6e63]/50'
+                                            : 'bg-[#5d4037]/50 border-[#8d6e63]'
                                         }
+                                        ${!isVisiting && !planted ? 'hover:bg-[#8d6e63]/50 cursor-pointer active:scale-95' : ''}
+                                        ${!isVisiting && planted ? 'cursor-pointer' : ''}
                                     `}
                                 >
                                     {planted ? (
@@ -257,7 +282,7 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
                                         </div>
                                     ) : (
                                         <div className="text-[#a1887f] opacity-50 font-bold text-xs uppercase pointer-events-none">
-                                            {selectedSeed ? 'Plant' : 'Empty'}
+                                            {!isVisiting && selectedSeed ? 'Plant' : 'Empty'}
                                         </div>
                                     )}
                                 </div>
@@ -266,31 +291,33 @@ const EcoGarden: React.FC<EcoGardenProps> = ({ user, onUpdateUser }) => {
                     </div>
 
                     {/* Expand Button */}
-                    <button 
-                        onClick={expandGarden}
-                        disabled={currentGardenSize >= 30}
-                        className={`w-full py-4 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 transition-all group relative z-10 ${
-                            currentGardenSize >= 30 
-                                ? 'border-white/20 text-white/40 cursor-default'
-                                : 'border-white/40 text-white/60 hover:bg-white/10 hover:border-white hover:text-white'
-                        }`}
-                    >
-                        {currentGardenSize >= 30 ? (
-                            <span className="font-bold text-sm">MAX SIZE REACHED</span>
-                        ) : (
-                            <>
-                                <Maximize size={24} className="mb-1" />
-                                <span className="font-bold text-sm">EXPAND TERRITORY</span>
-                                <span className="text-xs font-medium bg-black/30 px-2 py-1 rounded-full">{expansionCost} pts</span>
-                            </>
-                        )}
-                    </button>
+                    {!isVisiting && (
+                        <button 
+                            onClick={expandGarden}
+                            disabled={currentGardenSize >= 30}
+                            className={`w-full py-4 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 transition-all group relative z-10 ${
+                                currentGardenSize >= 30 
+                                    ? 'border-white/20 text-white/40 cursor-default'
+                                    : 'border-white/40 text-white/60 hover:bg-white/10 hover:border-white hover:text-white'
+                            }`}
+                        >
+                            {currentGardenSize >= 30 ? (
+                                <span className="font-bold text-sm">MAX SIZE REACHED</span>
+                            ) : (
+                                <>
+                                    <Maximize size={24} className="mb-1" />
+                                    <span className="font-bold text-sm">EXPAND TERRITORY</span>
+                                    <span className="text-xs font-medium bg-black/30 px-2 py-1 rounded-full">{expansionCost} pts</span>
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
         )}
 
-        {/* SHOP VIEW */}
-        {activeTab === 'shop' && (
+        {/* SHOP VIEW - Hidden when visiting */}
+        {activeTab === 'shop' && !isVisiting && (
             <div className="grid grid-cols-2 gap-4">
                 {SEEDS.map(seed => {
                     const canAfford = user.points >= seed.cost;
